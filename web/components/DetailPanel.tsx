@@ -81,6 +81,12 @@ export default function DetailPanel({
   const n = (k: string) => (row[k] == null ? null : Number(row[k]));
   const s = (k: string) => (row[k] == null ? null : String(row[k]));
   const scope = "pct_"; // town percentile; nbr_ holds the neighbourhood one
+  const address = s("site_addr");
+  const town = s("town");
+  const zillowUrl =
+    address && town
+      ? `https://www.zillow.com/homes/${encodeURIComponent(`${address}, ${town}, MA`)}_rb/`
+      : null;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col overflow-y-auto border-l border-line bg-panel md:static md:w-[340px] md:shrink-0">
@@ -110,6 +116,17 @@ export default function DetailPanel({
           <p className="mt-2 text-[11px] leading-snug text-select">
             Thin score. {row.bldg_val_missing ? "The assessor reports no structure value for this parcel, so land share and value per square foot were excluded." : "Several components were unavailable."}
           </p>
+        )}
+        {zillowUrl && (
+          <a
+            href={zillowUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-flex rounded-sm border border-line px-2 py-1 text-[12px] text-muted hover:border-muted hover:text-text"
+            aria-label="View this property on Zillow (opens in a new tab)"
+          >
+            View on Zillow ↗
+          </a>
         )}
       </header>
 
