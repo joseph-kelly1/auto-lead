@@ -9,8 +9,8 @@ buildable, and the completed house has to cover what the project costs.
 Two pieces: an offline Python pipeline that turns MassGIS Level 3 parcel data
 into two immutable artifacts, and a viewer that reads them.
 
-Currently scoped to Newton, Wayland, Wellesley and Weston: 31,725 single-family
-parcels.
+Currently scoped to Brookline, Newton, Wayland, Wellesley and Weston: 36,296
+single-family parcels.
 
 ## The question it answers
 
@@ -91,35 +91,35 @@ exception:** a candidate must have both a measured parcel area and a matched
 municipal minimum. Missing either one fires `lot_size_unverified` and blocks the
 candidate rather than treating unknown as conforming.
 
-Gates, and how many parcels each one fired on in the shipped four-town build:
+Gates, and how many parcels each one fired on in the shipped five-town build:
 
 | Gate | × | Parcels | Source |
 |---|---|---|---|
-| `lot_size_unverified` | 0.00 | 190 | parcel area or applicable district minimum is unknown |
-| `nonconforming_lot` | 0.00 | 11,666 | lot is 60–100% of the applicable zoning minimum |
-| `severely_undersized_lot` | 0.00 | 5,358 | lot is below 60% of the applicable zoning minimum |
-| `unbuildable_envelope` | 0.00 | 774 | lot × local FAR cannot reach a marketable house |
-| `historic_restriction` | 0.00 | 15 | recorded preservation restriction (MHC `PR`) |
-| `historic_local_district` | 0.05 | 232 | MHC area designated `LHD` |
-| `wetland_overlap` | 0.10 | 1,897 | parcel intersects a MassDEP wetland |
-| `flood_sfha` | 0.15 | 1,811 | mapped FEMA Special Flood Hazard Area |
-| `historic_district` | 0.20 | 3,384 | MHC historic area, National Register designation |
+| `lot_size_unverified` | 0.00 | 201 | parcel area or applicable district minimum is unknown |
+| `nonconforming_lot` | 0.00 | 12,974 | lot is 60–100% of the applicable zoning minimum |
+| `severely_undersized_lot` | 0.00 | 5,597 | lot is below 60% of the applicable zoning minimum |
+| `unbuildable_envelope` | 0.00 | 1,101 | lot × local FAR cannot reach a marketable house |
+| `historic_restriction` | 0.00 | 20 | recorded preservation restriction (MHC `PR`) |
+| `historic_local_district` | 0.05 | 732 | MHC area designated `LHD` |
+| `wetland_overlap` | 0.10 | 1,924 | parcel intersects a MassDEP wetland |
+| `flood_sfha` | 0.15 | 1,853 | mapped FEMA Special Flood Hazard Area |
+| `historic_district` | 0.20 | 4,777 | MHC historic area, National Register designation |
 | `septic_undersized` | 0.25 | 2,588 | off sewer and below `septic_min_acres` |
-| `historic_inventory` | 0.30 | 1,798 | MHC-inventoried building on the parcel |
+| `historic_inventory` | 0.30 | 3,110 | MHC-inventoried building on the parcel |
 | `acec` | 0.30 | 0 | Area of Critical Environmental Concern |
-| `narrow_lot` | 0.30 | 5,149 | bounding-box width below district frontage minimum or fallback |
-| `odd_shaped_lot` | 0.35 | 210 | compactness `4πA/P²` below `min_compactness` |
+| `narrow_lot` | 0.30 | 5,254 | bounding-box width below district frontage minimum or fallback |
+| `odd_shaped_lot` | 0.35 | 228 | compactness `4πA/P²` below `min_compactness` |
 | `shared_polygon` | 0.50 | 2 | several single-family records on one polygon |
-| `downzoned_existing` | 0.55 | 3,294 | existing living area exceeds the local envelope |
-| `wetland_buffer` | 0.55 | 1,765 | inside the 100 ft Wetlands Protection Act buffer |
-| `wetland_riverfront` | 0.85 | 1,921 | within the 200 ft riverfront area |
+| `downzoned_existing` | 0.55 | 4,556 | existing living area exceeds the local envelope |
+| `wetland_buffer` | 0.55 | 1,819 | inside the 100 ft Wetlands Protection Act buffer |
+| `wetland_riverfront` | 0.85 | 2,027 | within the 200 ft riverfront area |
 
-Municipal bylaw tables match 31,535 of 31,725 parcels. Newton and Wellesley
-districts come from official GIS centroid joins; Wayland and Weston use the
-district carried in the assessor extract and are marked estimated provenance.
-The shipped standards use the stricter current/new-lot requirement where a
-bylaw varies by lot-creation date, so this screen prefers false negatives over
-clearing a legally nonconforming teardown.
+Municipal bylaw tables match 36,095 of 36,296 parcels. Brookline, Newton and
+Wellesley districts come from official GIS centroid joins; Wayland and Weston
+use the district carried in the assessor extract and are marked estimated
+provenance. The shipped standards use the stricter current/new-lot requirement
+where a bylaw varies by lot-creation date, so this screen prefers false
+negatives over clearing a legally nonconforming teardown.
 
 The **existing house is never a floor on the envelope**. If the observed local
 floor-area ratio implies something smaller than what already stands, that is the
@@ -153,15 +153,16 @@ Per town, from the shipped build:
 
 | Town | Comps | Own trend | Leave-one-out error | $/sqft | Observed FAR | Assess→sale |
 |---|---|---|---|---|---|---|
-| Newton | 380 | 6.4% | 21.0% | $877 | 0.39 | 1.065 |
-| Wayland | 36 | 8.1% | 14.8% | $570 | 0.14 | 1.098 |
+| Brookline | 49 | 5.2% | 36.0% | $1,130 | 0.31 | 1.015 |
+| Newton | 380 | 6.4% | 21.0% | $876 | 0.39 | 1.065 |
+| Wayland | 36 | 8.1% | 14.7% | $570 | 0.14 | 1.098 |
 | Wellesley | 250 | 7.2% | 20.4% | $903 | 0.29 | 1.067 |
-| Weston | 101 | 9.3% | 33.0% | $836 | 0.09 | 0.999 |
+| Weston | 101 | 9.3% | 32.8% | $836 | 0.09 | 0.999 |
 
 Accuracy is reported as **leave-one-out median absolute percentage error** —
 each comparable's own recorded price predicted from the others — because that is
 out-of-sample error on real sales rather than the in-sample R² of a fit nobody
-can check. It runs 15–33%. Treat the value as a screen, not an appraisal.
+can check. It runs 15–36%. Treat the value as a screen, not an appraisal.
 
 The price trend is fitted **pooled across towns** by default. Weston's own slope
 fits at 9.3%/yr on 101 comps, which doubles an eight-year-old sale and produced
@@ -172,7 +173,7 @@ left in they invert the sign of the fitted trend.
 
 **Acquisition price** is a live list price where `listings.csv` supplies one,
 otherwise assessed value × the town's *measured* sale-to-assessment ratio (these
-four towns land at 0.999–1.098) × an off-market premium. Where the assessor
+five towns land at 0.999–1.098) × an off-market premium. Where the assessor
 suppresses the structure value the total assessment is depressed with it and the
 multiple reads as a bargain — 1,637 Newton parcels, one of which priced out at a
 $356k acquisition. Those fall back to land value grossed up by the town's
@@ -201,14 +202,14 @@ Shipped build, share of parcels:
 
 | Input | Authoritative | Estimated | Missing |
 |---|---|---|---|
-| `zoning` | 76.0% | 23.8% | 0.1% |
-| `resale_value` | 91.1% | 8.9% | 0.0% |
-| `lot_area` | 99.7% | 0.3% | 0.0% |
-| `structure_value` | 94.6% | 0.0% | 5.4% |
-| `living_area` | 76.9% | 23.1% | 0.0% |
+| `zoning` | 79.0% | 20.9% | 0.1% |
+| `resale_value` | 90.0% | 10.0% | 0.0% |
+| `lot_area` | 99.6% | 0.4% | 0.0% |
+| `structure_value` | 95.3% | 0.0% | 4.7% |
+| `living_area` | 79.8% | 20.2% | 0.0% |
 | `acquisition_price` | 0.0% | 100.0% | 0.0% |
 | `constraints` | 100.0% | 0.0% | 0.0% |
-| `buildable_envelope` | 66.1% | 33.9% | 0.0% |
+| `buildable_envelope` | 70.3% | 29.7% | 0.0% |
 
 Acquisition price remains the largest systematic data gap: no live listings
 export is loaded, so every acquisition estimate comes from assessments. Zoning
@@ -231,8 +232,8 @@ optional.
 
 | File | Used by | Effect when present |
 |---|---|---|
-| `zoning_assignments.csv` | build | `town,loc_id,zoning,authority,source_url,as_of`. Official parcel-centroid district assignments for Newton and Wellesley. Refresh from municipal ArcGIS layers with `uv run fetch_zoning_assignments.py` |
-| `zoning_minimums.csv` | build | `town,zoning,min_lot_acres,min_frontage_ft,max_far,max_lot_coverage,authority,source_url,as_of`. Official lot-area/frontage standards for the four towns. Missing or undersized lots are hard blockers; matched FAR/coverage also makes the envelope authoritative |
+| `zoning_assignments.csv` | build | `town,loc_id,zoning,authority,source_url,as_of`. Official parcel-centroid district assignments for Brookline, Newton and Wellesley. Refresh from municipal ArcGIS layers with `uv run fetch_zoning_assignments.py` |
+| `zoning_minimums.csv` | build | `town,zoning,min_lot_acres,min_frontage_ft,max_far,max_lot_coverage,authority,source_url,as_of`. Official lot-area/frontage standards for the five towns. Missing or undersized lots are hard blockers; matched FAR/coverage also makes the envelope authoritative |
 | `listings.csv` | build | `town,loc_id,site_addr,status,list_price,original_list_price,list_date,days_on_market`. A real list price replaces the assessment multiple and is marked authoritative; enables the four listing components of acquisition likelihood, which are null without it |
 | `permits.csv` | calibrate | `town,loc_id,site_addr,permit_date,permit_type` where `permit_type` is `demolition` or `new_dwelling`. The only direct observation of the target event. A demolition joined to a subsequent new dwelling is a success; a demolition with nothing built back is an explicit negative |
 
@@ -264,24 +265,16 @@ reports lower confidence.
 is very uneven — Newton has 155 inventoried points against 16,944 single
 families, Wellesley 1,193 against 7,319 — so an absent MHC record is *not*
 evidence a house is unlisted, and the layer can only ever add a constraint,
-never clear one. Building footprints reached only 5,673 of 31,725 parcels;
+never clear one. Building footprints reached only 9,930 of 36,296 parcels;
 statewide coverage is partial, and the columns go null rather than zero outside
 it. The ACEC shapefile is dated 2009; check for newer designations before
 relying on an absence.
 
 Sanity check against local knowledge, which is how you should read any of this:
-Newton 99.8% and Wellesley 100% in a sewer service area; Wayland 0.8% and
-Weston 0.6%, matching just the `WAYLAND SEWER` district and the two school
-systems. Those two towns really are almost entirely septic. No ACEC comes
-within 4.3 km of the four towns, so that column is legitimately empty here —
-it will matter if you add Concord or Lincoln.
-
-Sanity check against local knowledge, which is how you should read any of this:
-Newton 99.8% and Wellesley 100% in a sewer service area; Wayland 0.8% and
-Weston 0.6%, matching just the `WAYLAND SEWER` district and the two school
-systems. Those two towns really are almost entirely septic. No ACEC comes
-within 4.3 km of the four towns, so that column is legitimately empty here —
-it will matter if you add Concord or Lincoln. The ACEC shapefile is dated 2009;
+Brookline and Wellesley are 100% and Newton is 99.8% in a sewer service area;
+Wayland is 0.8% and Weston is 0.6%, matching just the `WAYLAND SEWER` district
+and the two school systems. Those two towns really are almost entirely septic.
+No ACEC intersects the five-town build. The ACEC shapefile is dated 2009;
 check for newer designations before relying on an absence.
 
 `flag_wetland_m` at the default 250 m radius touches 94% of Weston and 89% of
@@ -349,8 +342,10 @@ Without the second test, builders' land purchases pass as finished-home sales �
 one example property's last recorded sale is an $880k lot purchase in the same year its
 new house was finished.
 
-Label volume at the deepest window (4.5 fiscal years, four towns):
-`rebuild` 600, `rebuild_sold` 311, `viable` 158.
+The deepest available five-town validation window averages 5.0 fiscal years:
+`rebuild` 434, `rebuild_sold` 208, `viable` 128. Historical `LOC_ID` changes
+mean the oldest ranking join covers Newton, Wellesley and Weston; shorter
+splits include all five towns.
 
 #### The one assumption checked against outcomes
 
@@ -360,18 +355,17 @@ would have made each of those projects break even gives a distribution:
 
 | Town | n | Break-even $/sqft (p25 / median / p75) | At a 20% margin |
 |---|---|---|---|
-| Newton | 144 | $315 / $376 / $441 | $241 |
-| Wayland | 9 | $152 / $173 / $212 | $105 |
-| Wellesley | 135 | −$43 / $312 / $440 | $180 |
-| Weston | 23 | $287 / $391 / $467 | $244 |
-| **All** | **311** | **$252 / $351 / $439** | **$222** |
+| Brookline | 23 | $413 / $553 / $640 | $374 |
+| Newton | 103 | $308 / $374 / $427 | $234 |
+| Wayland | 7 | $169 / $183 / $253 | $103 |
+| Wellesley | 55 | $302 / $405 / $457 | $247 |
+| Weston | 20 | $255 / $362 / $469 | $227 |
+| **All** | **208** | **$297 / $384 / $462** | **$243** |
 
-`costs.construction_per_sqft` is therefore set to **$350**, that median, rather
-than to a plausible-sounding guess. At the original $425 the model called 96% of
-real completed rebuilds unprofitable, which collapsed
-`project_economics_score` and with it the ranking. Every run reprints this table
-and warns if the configured rate sits above the median. This is calibration of an
-assumption against outcomes — it is not a fitted weight.
+`costs.construction_per_sqft` remains set to **$350**, slightly below the current
+$384 observed median. Every run reprints this table and warns when the configured
+rate sits above the median. This is a calibration check against outcomes, not a
+fitted weight or a substitute for a builder's actual cost schedule.
 
 #### Ranking performance, and an honest negative result
 
@@ -379,15 +373,16 @@ Time-ordered: the model is scored on a prior vintage and outcomes read from the
 current release, so nothing leaks. `--fit` splits further, training on the older
 vintages and validating on the most recent prior one.
 
-Deepest window, `rebuild_sold`, 302 successes in 27,439 parcels (1.10% base):
+Deepest available window, `rebuild_sold`, 178 successes in 27,475 parcels
+(0.65% base):
 
 | Ranking by | AUC | P@50 | P@100 | P@250 | recall@250 |
 |---|---|---|---|---|---|
-| `rebuild_opportunity_score` (this model) | 0.674 | 2.0% | 1.0% | 0.8% | 0.7% |
-| `structure_obsolescence_score` (the old model) | **0.773** | **12.0%** | **12.0%** | **7.6%** | 6.3% |
-| `project_economics_score` alone | 0.655 | 2.0% | 1.0% | 0.8% | 0.7% |
-| `rebuild_feasibility_score` alone | 0.582 | 0.0% | 0.0% | 1.6% | 1.3% |
-| `acquisition_likelihood_score` alone | 0.453 | 0.0% | 1.0% | 1.2% | 1.0% |
+| `rebuild_opportunity_score` (this model) | 0.601 | 2.0% | 1.0% | 0.8% | 1.1% |
+| `structure_obsolescence_score` (the old model) | **0.840** | **8.0%** | **8.0%** | **6.0%** | 8.4% |
+| `project_economics_score` alone | 0.649 | 0.0% | 0.0% | 0.8% | 1.1% |
+| `rebuild_feasibility_score` alone | 0.587 | 0.0% | 0.0% | 0.4% | 0.6% |
+| `acquisition_likelihood_score` alone | 0.495 | 0.0% | 1.0% | 0.4% | 0.6% |
 
 **The obsolescence-only ranking predicts observed rebuilds substantially better
 than the economics-driven one.** That result held after fixing four real
@@ -395,15 +390,14 @@ modelling bugs, so it is a property, not a defect, and it is worth stating
 plainly rather than burying. Three things are going on:
 
 1. **Part of the old score's edge is leakage.** Parcels whose structure value is
-   suppressed are rebuilt at 6.04% against a 1.06% base rate, because
-   `bldg_val = 0` frequently means the house is already gone. 32 of the old
-   model's top 50 are such parcels. Excluding them the old model still wins, but
-   by less.
+   suppressed are disproportionately likely to be rebuilt because `bldg_val =
+   0` frequently means the house is already gone. Excluding parcels that are no
+   longer old reduces that edge, but the old model still wins.
 2. **The label measures occurrence, not quality.** "Which cheap obsolete houses
    did builders buy" is largely a demand signal, and obsolescence measures it
    directly. A genuinely excellent site that nobody has got to yet counts as a
    negative, and the model is explicitly built to surface those.
-3. **The economics is a noisy multiplier.** Resale value carries 15–33%
+3. **The economics is a noisy multiplier.** Resale value carries 15–36%
    out-of-sample error and acquisition price is modelled, not observed. A margin
    built from two noisy estimates has a tail dominated by estimation error, and
    `precision@50` lives entirely in that tail.
@@ -412,29 +406,16 @@ Every run prints a sensitivity sweep of the two levers that decide which side
 wins, so the trade-off is measured rather than argued. Deepest window:
 
 ```
-economics_exponent    0  AUC 0.619 P@100 4.0%   0.25  AUC 0.672 P@100 1.0%   1* AUC 0.674 P@100 1.0%   1.5  AUC 0.675 P@100 1.0%
-support_strength      0  AUC 0.672 P@100 1.0%   0.35* AUC 0.674 P@100 1.0%   1  AUC 0.676 P@100 1.0%   4  AUC 0.680 P@100 1.0%
-obsolescence only        AUC 0.773 P@100 12.0%                                            (* = configured)
+economics_exponent    0  AUC 0.589 P@100 0.0%   0.25  AUC 0.596 P@100 1.0%   1* AUC 0.601 P@100 1.0%   1.5  AUC 0.601 P@100 1.0%
+support_strength      0  AUC 0.600 P@100 1.0%   0.35* AUC 0.601 P@100 1.0%   1  AUC 0.601 P@100 1.0%   4  AUC 0.603 P@100 1.0%
+obsolescence only        AUC 0.840 P@100 8.0%                                             (* = configured)
 ```
 
 `--fit` grid-searches 480 combinations of the combination weights on the training
 split and reports both splits. It **refuses to fit below 150 training successes**
-rather than dressing up a fit on forty labels as optimisation. On the current
-data it does run, and it lands here:
-
-```
-                        AUC     P@50    P@100   P@250
-train      config      0.679    0.0%    1.0%    1.6%
-train      fitted      0.714   10.0%    7.0%    4.4%
-validation config      0.619    0.0%    0.0%    0.4%
-validation fitted      0.747    0.0%    0.0%    0.8%
-fitted params: economics_exponent 0.0, confidence_exponent 0.0, support_strength 0.35
-```
-
-The search wants to switch the pro forma off entirely, which is the obsolescence
-model wearing a different name. It improves training precision and validation
-AUC, and **does not improve validation precision@50 or @100 at all** — so it is
-reported as a candidate and not adopted.
+rather than dressing up a sparse fit as optimisation. The newest five-town split
+currently has only 38 successes, so fitted settings should be treated cautiously
+until more outcomes accrue.
 
 The defaults have therefore been left as configured expert settings, not retuned
 to win this metric, for the reason in point 2: the brief is economically viable
@@ -574,7 +555,7 @@ provider request is made. **Zillow is never scraped**; only the authorised
 Bridge API is called.
 
 This lookup is per-parcel, on demand, and deliberately **does not feed the
-ranking**. The score is computed offline over 31,725 parcels and the app has to
+ranking**. The score is computed offline over 36,296 parcels and the app has to
 work with no provider credentials at all, so a live per-parcel call cannot be a
 scoring input. To let a real list price into the pro forma — where it replaces
 the assessment multiple and is marked authoritative — export listings to
@@ -590,7 +571,7 @@ the refreshed copies.
 `../artifacts` into `public/`. On Vercel, it validates and uses the checked-in
 copies instead.
 
-The four-town artifacts are 13 MB, comfortably inside the 100 MB Vercel
+The five-town artifacts are about 20 MB, comfortably inside the 100 MB Vercel
 source-upload cap, so they ship with the deployment and are served same origin.
 **Vercel's static CDN does honour range requests** — verified, HTTP 206 with a
 correct `content-range` — so DuckDB-WASM and pmtiles both work from `public/`.
@@ -647,7 +628,7 @@ three are public records.
 
 **1. Full buildable envelopes and parcel-specific rebuild rights.** Minimum lot
 area is now enforced as a hard eligibility rule, and official district geometry
-is joined for Newton and Wellesley. The model also uses bylaw FAR or coverage
+is joined for Brookline, Newton and Wellesley. The model also uses bylaw FAR or coverage
 limits where the source table supplies them. Remaining work: authoritative
 Wayland and Weston district geometry, lot-creation dates, setbacks, height,
 variances, and determinations of grandfathered status. Until those facts are
@@ -669,12 +650,13 @@ any individual deal, and days-on-market, price cuts, withdrawn and expired
 listings are the whole timing half of acquisition likelihood — all null today.
 Closed new-construction sales would also replace the assessor's single
 `LS_PRICE`/`LS_DATE` per parcel, which is the reason the comparable set is only
-~100 sales per town and the resale model carries 15–33% error. Source: your MLS
+~100 sales per town and the resale model carries 15–36% error. Source: your MLS
 via an authorised RESO Web API feed. Load into `pipeline/listings.csv`.
 
 **4. A builder's actual cost schedule.** `costs.construction_per_sqft` is
-currently set to the median break-even of 311 real completed projects, which is a
-sanity check rather than a quote. Real numbers per square foot by product type,
+currently checked against 208 real completed-and-sold projects; its $350 setting
+is slightly below that window's $384 median and is a sanity check rather than a
+quote. Real numbers per square foot by product type,
 plus site work, demolition, abatement and septic, would move the pro forma from
 plausible to usable. No dataset needed — one conversation.
 
@@ -694,8 +676,8 @@ service-area polygon, not a connection. Actual septic system records, perc test
 results and NRCS soil suitability would replace the flat `septic_undersized`
 acreage rule.
 
-**8. Statewide building footprints, completed.** `buildingfp_poly` reached 5,673
-of 31,725 parcels. Full coverage would give real lot coverage, a real existing
+**8. Statewide building footprints, completed.** `buildingfp_poly` reached 9,930
+of 36,296 parcels. Full coverage would give real lot coverage, a real existing
 footprint, and a genuine setback measurement rather than a bounding-box proxy.
 
 **9. Ownership and probate signals.** `estate` is a regex over `OWNER1` and

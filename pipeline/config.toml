@@ -11,7 +11,7 @@
 # likelihood only re-order what is already viable.
 
 [run]
-towns = ["NEWTON", "WAYLAND", "WELLESLEY", "WESTON"]
+towns = ["BROOKLINE", "NEWTON", "WAYLAND", "WELLESLEY", "WESTON"]
 raw_dir = "../data/raw"
 out_dir = "../artifacts"
 
@@ -245,7 +245,7 @@ min_neighborhood_adjustment = 0.70
 [acquisition]
 # Assessed value is not market value. The ratio of recent sale price to assessed
 # total is measured per town from the same extract rather than assumed; these
-# four towns land near 1.04. Falls back to the constant when a town has too few
+# five towns land near 1.04. Falls back to the constant when a town has too few
 # recorded sales.
 ratio_lookback_years = 3
 ratio_min_sales = 25
@@ -278,9 +278,9 @@ abatement = 18000.0
 abatement_year_cutoff = 1978
 # The one assumption here that is checked against outcomes rather than asserted.
 # `calibrate.py` solves the pro forma for the rate that would have made each
-# actually-completed-and-sold rebuild break even; over the 311 such projects in
-# the deepest window that distribution is p25 $252 / median $351 / p75 $439.
-# 350 is that median. It is still an assumption — the acquisition side of those
+# actually-completed-and-sold rebuild break even; over the 208 such projects in
+# the deepest window that distribution is p25 $297 / median $384 / p75 $462.
+# 350 is slightly below that median. It is still an assumption — the acquisition side of those
 # projects is modelled, not observed, so the true supportable rate is probably a
 # little higher — and it is the first number to replace with your builder's.
 # Re-run `uv run calibrate.py` after changing it; the check is reprinted.

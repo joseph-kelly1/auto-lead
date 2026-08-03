@@ -1,4 +1,24 @@
 town,zoning,min_lot_acres,min_frontage_ft,max_far,max_lot_coverage,authority,source_url,as_of
+Brookline,S-40,0.9182736455,150,0.15,,Town of Brookline Zoning By-Law Table 5.01,https://ecode360.com/45070431,2026-08-03
+Brookline,S-25,0.5739210285,120,0.20,,Town of Brookline Zoning By-Law Table 5.01,https://ecode360.com/45070431,2026-08-03
+Brookline,S-15,0.3443526171,100,0.25,,Town of Brookline Zoning By-Law Table 5.01,https://ecode360.com/45070431,2026-08-03
+Brookline,S-10,0.2295684114,85,0.30,,Town of Brookline Zoning By-Law Table 5.01,https://ecode360.com/45070431,2026-08-03
+Brookline,S-7,0.1606978879,65,0.35,,Town of Brookline Zoning By-Law Table 5.01,https://ecode360.com/45070431,2026-08-03
+Brookline,S-0.5P,0.3443526171,100,0.25,,Town of Brookline Zoning By-Law Table 5.01 non-cluster standard,https://ecode360.com/45070431,2026-08-03
+Brookline,S-0.75P,0.1606978879,65,0.35,,Town of Brookline Zoning By-Law Table 5.01,https://ecode360.com/45070431,2026-08-03
+Brookline,SC-7,0.1606978879,65,0.35,,Town of Brookline Zoning By-Law Table 5.01,https://ecode360.com/45070431,2026-08-03
+Brookline,SC-10,0.2295684114,65,0.35,,Town of Brookline Zoning By-Law Table 5.01,https://ecode360.com/45070431,2026-08-03
+Brookline,S-4,0.0918273646,40,1.00,,Town of Brookline Zoning By-Law Table 5.01,https://ecode360.com/45070431,2026-08-03
+Brookline,T-6,0.1147842057,45,0.75,,Town of Brookline Zoning By-Law Table 5.01,https://ecode360.com/45070431,2026-08-03
+Brookline,T-5,0.0918273646,40,1.00,,Town of Brookline Zoning By-Law Table 5.01,https://ecode360.com/45070431,2026-08-03
+Brookline,T-5(NH),0.0918273646,40,1.00,,Town of Brookline Zoning By-Law Table 5.01,https://ecode360.com/45070431,2026-08-03
+Brookline,F-1.0,0.0918273646,40,1.00,,Town of Brookline Zoning By-Law Table 5.01,https://ecode360.com/45070431,2026-08-03
+Brookline,M-0.5,0.0918273646,40,0.50,,Town of Brookline Zoning By-Law Table 5.01,https://ecode360.com/45070431,2026-08-03
+Brookline,M-1.0,0.0918273646,40,1.00,,Town of Brookline Zoning By-Law Table 5.01,https://ecode360.com/45070431,2026-08-03
+Brookline,M-1.0(CAM),0.0918273646,40,1.00,,Town of Brookline Zoning By-Law Table 5.01,https://ecode360.com/45070431,2026-08-03
+Brookline,M-1.5,0.0918273646,40,1.50,,Town of Brookline Zoning By-Law Table 5.01,https://ecode360.com/45070431,2026-08-03
+Brookline,M-2.0,0.0918273646,40,2.00,,Town of Brookline Zoning By-Law Table 5.01,https://ecode360.com/45070431,2026-08-03
+Brookline,M-2.5,0.0918273646,40,2.50,,Town of Brookline Zoning By-Law Table 5.01,https://ecode360.com/45070431,2026-08-03
 Newton,SR1,0.5739210285,140,,0.15,City of Newton Zoning Ordinance Sec. 3.1.3,https://www.newtonma.gov/home/showpublisheddocument/29823/638887019852292948,2025-12-01
 Newton,SR2,0.3443526171,100,,0.20,City of Newton Zoning Ordinance Sec. 3.1.3,https://www.newtonma.gov/home/showpublisheddocument/29823/638887019852292948,2025-12-01
 Newton,SR3,0.2295684114,80,,0.30,City of Newton Zoning Ordinance Sec. 3.1.3,https://www.newtonma.gov/home/showpublisheddocument/29823/638887019852292948,2025-12-01

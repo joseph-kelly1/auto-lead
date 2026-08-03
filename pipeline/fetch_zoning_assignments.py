@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Refresh parcel zoning from official Newton and Wellesley GIS polygons.
+"""Refresh parcel zoning from official municipal GIS polygons.
 
 The MassGIS assessor extract already carries district text for Wayland and
-Weston. Wellesley leaves it empty, and Newton publishes a more authoritative
-zoning layer, so these two towns are assigned by parcel-centroid containment.
+Weston. Brookline and Newton publish more authoritative zoning layers, while
+Wellesley leaves its assessor zoning empty, so those three towns are assigned
+by parcel-centroid containment.
 
 Run after at least one parcel build exists::
 
@@ -28,6 +29,12 @@ PARCELS = ROOT / "artifacts" / "parcels.parquet"
 OUTPUT = Path(__file__).resolve().parent / "zoning_assignments.csv"
 
 SOURCES = {
+    "Brookline": {
+        "endpoint": "https://services1.arcgis.com/Oknk0tvfHOElpgGU/arcgis/rest/services/Assessors_Property_Search_Feeder_Map_1_WFL1/FeatureServer/1/query",
+        "field": "ZONECLASS",
+        "authority": "Town of Brookline official zoning GIS",
+        "source_url": "https://services1.arcgis.com/Oknk0tvfHOElpgGU/arcgis/rest/services/Assessors_Property_Search_Feeder_Map_1_WFL1/FeatureServer/1",
+    },
     "Newton": {
         "endpoint": "https://gisweb.newtonma.gov/server/rest/services/Data/MapServer/24/query",
         "field": "Zoning",
@@ -110,7 +117,7 @@ def main() -> None:
             print(f"{town}: assigned {len(assigned):,}/{total:,} parcels ({coverage:.1%})")
 
     with OUTPUT.open("w", newline="") as f:
-        writer = csv.writer(f)
+        writer = csv.writer(f, lineterminator="\n")
         writer.writerow(["town", "loc_id", "zoning", "authority", "source_url", "as_of"])
         writer.writerows(sorted(rows))
     print(f"wrote {OUTPUT} ({len(rows):,} assignments)")

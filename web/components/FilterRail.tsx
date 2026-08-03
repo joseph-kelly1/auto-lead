@@ -157,8 +157,8 @@ export default function FilterRail({
         />
         <p className="text-[11px] leading-snug text-muted">
           How much of this parcel's score rests on authoritative inputs rather
-          than estimates. Zoning is missing everywhere until a zoning table is
-          loaded, which caps everyone.
+          than estimates. Brookline, Newton and Wellesley use official GIS
+          district assignments; district provenance is shown per parcel.
         </p>
       </Field>
 

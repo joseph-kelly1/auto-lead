@@ -762,7 +762,7 @@ def comparable_sales(d, cfg, towns, xy, quiet=False):
                     cfg["buildable"]["observed_far_percentile"])
 
         # Assessed value is not market value. Measure the ratio rather than
-        # assume it: these four towns land near 1.04.
+        # assume it: these five towns land near 1.04.
         with np.errstate(invalid="ignore"):
             rm = (m & np.isfinite(sale_year)
                   & (now - sale_year <= a["ratio_lookback_years"])
