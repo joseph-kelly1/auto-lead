@@ -82,9 +82,15 @@ support_structure_obsolescence = 0.4
 # --------------------------------------------------------------------------
 # Each key is a MULTIPLIER applied when the condition holds, so several
 # constraints compound. 0.0 is a hard blocker and forces the final score to 0.
-# An unknown never applies a multiplier — it lowers data_confidence_score
-# instead, which is the only honest treatment of missing information.
+# Unknown constraints normally do not apply a multiplier. Lot area is the
+# exception: this screen now requires a measured lot and a matched municipal
+# minimum before calling a teardown eligible.
 [feasibility]
+# A teardown cannot be cleared when either the parcel area or the applicable
+# zoning minimum is unavailable. This is deliberately conservative: verify the
+# district/lot history and add it to the zoning inputs rather than assuming the
+# parcel conforms.
+lot_size_unverified = 0.0
 # Parcel polygon intersects a MassDEP wetland. Not literally unbuildable, but
 # it means an NOI, a delineation and a Conservation Commission hearing before
 # anyone draws a foundation, and frequently a denied footprint.
@@ -115,10 +121,10 @@ historic_restriction = 0.0
 # nonconforming lot is often buildable by right under G.L. c.40A s.6, but
 # demolishing the structure can forfeit the grandfathered status, which is the
 # single most expensive surprise in this business.
-nonconforming_lot = 0.45
+nonconforming_lot = 0.0
 # Far below the minimum: assume the grandfathered envelope is the only thing
 # that makes the lot usable, and that a teardown gives it up.
-severely_undersized_lot = 0.12
+severely_undersized_lot = 0.0
 severely_undersized_fraction = 0.60
 # Off municipal sewer and too small to site a compliant Title 5 system plus
 # reserve area alongside a larger house.

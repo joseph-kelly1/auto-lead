@@ -79,6 +79,7 @@ SOURCE_FIELD = {
 # Feasibility gate -> the config key holding its multiplier. Order is the order
 # the notes column lists them in; it does not affect the product.
 GATES = [
+    "lot_size_unverified",
     "wetland_overlap", "wetland_buffer", "wetland_riverfront", "flood_sfha",
     "acec", "historic_inventory", "historic_district",
     "historic_local_district", "historic_restriction", "nonconforming_lot",
@@ -332,9 +333,9 @@ def buildable_envelope(d, cfg, observed_far: np.ndarray,
 def feasibility(d, cfg, envelope_raw: np.ndarray, buildable_sqft: np.ndarray):
     """Multiplicative gates. Returns (score, notes, gate masks).
 
-    An unknown never applies a multiplier. A parcel whose zoning minimum is
-    unknown is not penalised for being nonconforming and is not credited with
-    conforming either; it loses confidence, which is the only honest treatment.
+    Unknown constraints normally do not apply a multiplier. Lot size is a hard
+    eligibility requirement: an unmeasured lot or unmatched zoning minimum
+    fires ``lot_size_unverified`` so the parcel cannot be presented as cleared.
     """
     f = cfg["feasibility"]
     n = len(buildable_sqft)
@@ -353,6 +354,7 @@ def feasibility(d, cfg, envelope_raw: np.ndarray, buildable_sqft: np.ndarray):
 
     with np.errstate(invalid="ignore"):
         masks = {
+            "lot_size_unverified": ~(np.isfinite(minlot) & np.isfinite(lot)),
             "wetland_overlap": np.isfinite(wet) & (wet <= 0),
             # 100 ft Wetlands Protection Act buffer zone, in metres.
             "wetland_buffer": np.isfinite(wet) & (wet > 0) & (wet <= 30.5),
@@ -615,6 +617,8 @@ def _cfg():
                   "max_annual_trend": 0.12},
         "buildable": {"min_viable_sqft": 1800.0, "max_home_sqft": 7500.0},
         "feasibility": {g: 0.5 for g in GATES} | {
+            "lot_size_unverified": 0.0,
+            "nonconforming_lot": 0.0, "severely_undersized_lot": 0.0,
             "wetland_overlap": 0.10, "unbuildable_envelope": 0.0,
             "severely_undersized_fraction": 0.6, "septic_min_acres": 0.75,
             "min_compactness": 0.30, "min_lot_width_ft": 55.0},
@@ -734,7 +738,8 @@ def selfcheck():
                                  np.array([3000.0] * 4))[1]
     assert ceiling[2] == 3000.0, ceiling      # market ceiling binds
 
-    # --- feasibility: a hard blocker is a zero, an unknown is not a penalty
+    # --- feasibility: lot-size verification is required; other unknowns do
+    # not assert a constraint
     n = 4
     base = {
         "existing_living_sqft": np.array([2000.0] * n),
@@ -755,10 +760,12 @@ def selfcheck():
     }
     env = np.array([4000.0] * n)
     fs, notes, masks = feasibility(base, cfg, env, env)
-    assert fs[0] == 1.0 and notes[0] == ""          # unknown zoning: no penalty
-    assert fs[1] == cfg["feasibility"]["wetland_overlap"], fs
+    assert fs[0] == 0.0 and notes[0] == "lot_size_unverified"
+    assert masks["lot_size_unverified"][0]
+    assert fs[1] == 0.0, fs
     assert "wetland_overlap" in notes[1]
-    assert fs[2] == cfg["feasibility"]["wetland_buffer"], fs
+    assert "lot_size_unverified" in notes[1]
+    assert fs[2] == 0.0, fs
     # lot 0.5 ac against a 1.0 ac minimum is below 0.6x -> severely undersized
     # An authoritative frontage minimum overrides the configured fallback: a
     # 120 ft lot is wide enough by default and narrow in a 150 ft district.
@@ -768,7 +775,7 @@ def selfcheck():
     assert feasibility(strict, cfg, env, env)[2]["narrow_lot"].all()
 
     assert masks["severely_undersized_lot"][3], masks
-    assert fs[3] == cfg["feasibility"]["severely_undersized_lot"], fs
+    assert fs[3] == 0.0, fs
     assert not masks["nonconforming_lot"][3]    # the two bands are exclusive
 
     hard = dict(base, existing_living_sqft=np.array([2000.0] * n))

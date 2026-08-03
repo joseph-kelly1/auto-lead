@@ -94,6 +94,11 @@ export const ACQ_COMPONENTS = [
 /** Feasibility gates, with what each one actually means on the ground. */
 export const GATES: { key: string; label: string; note: string }[] = [
   {
+    key: "lot_size_unverified",
+    label: "Lot-size compliance unverified",
+    note: "Parcel area or applicable municipal minimum is missing. Candidate stays blocked until both are known.",
+  },
+  {
     key: "unbuildable_envelope",
     label: "No viable envelope",
     note: "Lot area times the local floor-area ratio cannot reach a marketable house.",
@@ -142,12 +147,12 @@ export const GATES: { key: string; label: string; note: string }[] = [
   {
     key: "severely_undersized_lot",
     label: "Far below the zoning minimum",
-    note: "The grandfathered envelope is probably what makes this lot usable, and a teardown can give it up.",
+    note: "Hard blocker: the parcel does not meet the mapped district's minimum lot area.",
   },
   {
     key: "nonconforming_lot",
     label: "Below the zoning minimum",
-    note: "Often buildable by right under G.L. c.40A s.6, but demolition can forfeit that status.",
+    note: "Hard blocker unless parcel-specific rebuild rights are independently verified.",
   },
   {
     key: "septic_undersized",

@@ -86,35 +86,40 @@ Multiplicative gates, each a configured multiplier in `[feasibility]`, so
 several constraints compound. `0.0` is a hard blocker and forces the final
 score to zero.
 
-**An unknown never applies a multiplier.** A parcel whose zoning minimum is
-unknown is not penalised for being nonconforming and is not credited with
-conforming either — it loses data confidence instead. Nothing missing is filled
-in with a favourable guess.
+Unknown constraints normally do not apply a multiplier. **Lot size is the
+exception:** a candidate must have both a measured parcel area and a matched
+municipal minimum. Missing either one fires `lot_size_unverified` and blocks the
+candidate rather than treating unknown as conforming.
 
 Gates, and how many parcels each one fired on in the shipped four-town build:
 
 | Gate | × | Parcels | Source |
 |---|---|---|---|
-| `unbuildable_envelope` | 0.00 | 2,301 | lot × local FAR cannot reach a marketable house |
+| `lot_size_unverified` | 0.00 | 190 | parcel area or applicable district minimum is unknown |
+| `nonconforming_lot` | 0.00 | 11,666 | lot is 60–100% of the applicable zoning minimum |
+| `severely_undersized_lot` | 0.00 | 5,358 | lot is below 60% of the applicable zoning minimum |
+| `unbuildable_envelope` | 0.00 | 774 | lot × local FAR cannot reach a marketable house |
 | `historic_restriction` | 0.00 | 15 | recorded preservation restriction (MHC `PR`) |
 | `historic_local_district` | 0.05 | 232 | MHC area designated `LHD` |
 | `wetland_overlap` | 0.10 | 1,897 | parcel intersects a MassDEP wetland |
 | `flood_sfha` | 0.15 | 1,811 | mapped FEMA Special Flood Hazard Area |
 | `historic_district` | 0.20 | 3,384 | MHC historic area, National Register designation |
-| `septic_undersized` | 0.25 | 2,587 | off sewer and below `septic_min_acres` |
+| `septic_undersized` | 0.25 | 2,588 | off sewer and below `septic_min_acres` |
 | `historic_inventory` | 0.30 | 1,798 | MHC-inventoried building on the parcel |
 | `acec` | 0.30 | 0 | Area of Critical Environmental Concern |
-| `narrow_lot` | 0.30 | 193 | bounding-box width below `min_lot_width_ft` |
+| `narrow_lot` | 0.30 | 5,149 | bounding-box width below district frontage minimum or fallback |
 | `odd_shaped_lot` | 0.35 | 210 | compactness `4πA/P²` below `min_compactness` |
-| `nonconforming_lot` | 0.45 | — | lot below the zoning minimum (needs the zoning table) |
 | `shared_polygon` | 0.50 | 2 | several single-family records on one polygon |
-| `downzoned_existing` | 0.55 | 6,587 | existing living area exceeds the local envelope |
+| `downzoned_existing` | 0.55 | 3,294 | existing living area exceeds the local envelope |
 | `wetland_buffer` | 0.55 | 1,765 | inside the 100 ft Wetlands Protection Act buffer |
-| `severely_undersized_lot` | 0.12 | — | far below the minimum (needs the zoning table) |
 | `wetland_riverfront` | 0.85 | 1,921 | within the 200 ft riverfront area |
 
-Two of these cannot fire at all without `zoning_minimums.csv`, and the build
-says so on every run rather than quietly scoring around it.
+Municipal bylaw tables match 31,535 of 31,725 parcels. Newton and Wellesley
+districts come from official GIS centroid joins; Wayland and Weston use the
+district carried in the assessor extract and are marked estimated provenance.
+The shipped standards use the stricter current/new-lot requirement where a
+bylaw varies by lot-creation date, so this screen prefers false negatives over
+clearing a legally nonconforming teardown.
 
 The **existing house is never a floor on the envelope**. If the observed local
 floor-area ratio implies something smaller than what already stands, that is the
@@ -196,21 +201,20 @@ Shipped build, share of parcels:
 
 | Input | Authoritative | Estimated | Missing |
 |---|---|---|---|
-| `zoning` | 0.0% | 76.8% | 23.2% |
+| `zoning` | 76.0% | 23.8% | 0.1% |
 | `resale_value` | 91.1% | 8.9% | 0.0% |
 | `lot_area` | 99.7% | 0.3% | 0.0% |
 | `structure_value` | 94.6% | 0.0% | 5.4% |
 | `living_area` | 76.9% | 23.1% | 0.0% |
 | `acquisition_price` | 0.0% | 100.0% | 0.0% |
 | `constraints` | 100.0% | 0.0% | 0.0% |
-| `buildable_envelope` | 0.0% | 100.0% | 0.0% |
+| `buildable_envelope` | 66.1% | 33.9% | 0.0% |
 
-Two rows are entirely estimated or missing today, and they are the two biggest
-gaps in the model: **nobody has told it the zoning rules, and nobody has told it
-what anything is actually listed for.** Loading a zoning table moves `zoning` and
-`buildable_envelope` to authoritative — verified end-to-end with a throwaway
-table: 14,923 parcels matched, the two dimensional gates started firing, and
-`zoning` went to 47% authoritative.
+Acquisition price remains the largest systematic data gap: no live listings
+export is loaded, so every acquisition estimate comes from assessments. Zoning
+is authoritative where an official municipal GIS assignment and bylaw minimum
+both exist; assessor-carried districts remain estimated even when their
+dimensional standard comes from an official bylaw.
 
 ### Configuration
 
@@ -220,14 +224,15 @@ Everything tunable lives in `pipeline/config.toml`, grouped by concept:
 `[confidence]`. Change it and re-run; nothing is hardcoded, and every section
 carries the reasoning for its numbers.
 
-Optional local inputs, all read from `pipeline/` if present, all absent by
-default, and the build prints which are missing and what each absence costs.
-Header-only templates ship as `*.example.csv`; copy one, drop the `.example`,
-and fill it in.
+Local inputs are read from `pipeline/`, and the build prints which are present,
+missing, or unmatched. Zoning standards and official Newton/Wellesley parcel
+assignments now ship with the repository; listings and permit exports remain
+optional.
 
 | File | Used by | Effect when present |
 |---|---|---|
-| `zoning_minimums.csv` | build | `town,zoning,min_lot_acres,min_frontage_ft,max_far,max_lot_coverage,authority,source_url,as_of`. Enables the nonconforming-lot, severely-undersized and subdivision gates, makes the buildable envelope authoritative, and lifts 22% of the confidence weight. Note `ZONING` in the assessor extract is the assessor's transcription, not the authoritative map, and Wellesley ships it empty — a spatial join against a town zoning layer in 26986 is more trustworthy |
+| `zoning_assignments.csv` | build | `town,loc_id,zoning,authority,source_url,as_of`. Official parcel-centroid district assignments for Newton and Wellesley. Refresh from municipal ArcGIS layers with `uv run fetch_zoning_assignments.py` |
+| `zoning_minimums.csv` | build | `town,zoning,min_lot_acres,min_frontage_ft,max_far,max_lot_coverage,authority,source_url,as_of`. Official lot-area/frontage standards for the four towns. Missing or undersized lots are hard blockers; matched FAR/coverage also makes the envelope authoritative |
 | `listings.csv` | build | `town,loc_id,site_addr,status,list_price,original_list_price,list_date,days_on_market`. A real list price replaces the assessment multiple and is marked authoritative; enables the four listing components of acquisition likelihood, which are null without it |
 | `permits.csv` | calibrate | `town,loc_id,site_addr,permit_date,permit_type` where `permit_type` is `demolition` or `new_dwelling`. The only direct observation of the target event. A demolition joined to a subsequent new dwelling is a success; a demolition with nothing built back is an explicit negative |
 
@@ -301,7 +306,7 @@ the real files rather than the spec:
 | `LS_DATE` is `C(8)` text; 226 rows are the sentinel `19000101` | Parsed, and anything before 1950 dropped |
 | Newton's `CITY` holds village names while `OWN_CITY` says `NEWTON` | Absentee compares street address and state, never city |
 | One polygon can carry hundreds of assessment rows | Condo and exempt filtering is applied at the polygon level, so a single condo record disqualifies the whole parcel |
-| Wellesley ships `BLD_AREA` and `ZONING` entirely empty | Per-town completeness gate drops affected components; `far` falls back to living area |
+| Wellesley ships `BLD_AREA` and assessor `ZONING` entirely empty | `far` falls back to living area; zoning is assigned from Wellesley's official GIS district polygons |
 | `LOC_ID` is `F_<x>_<y>`, US survey feet, while geometry is metres | Treated as an opaque key; coordinates never parsed out of it |
 
 `artifacts/parcels_completeness.csv` reports per-town coverage for every
@@ -445,7 +450,7 @@ severely. Results are reported separately by town on every run.
 
 | File | Contents |
 |---|---|
-| `parcels.parquet` | One row per scored parcel, sorted by score. 144 columns |
+| `parcels.parquet` | One row per scored parcel, sorted by score. 146 columns |
 | `parcels.pmtiles` | Parcel geometry in 4326 with `loc_id` and `score` only, enough to render and join back |
 | `parcels_completeness.csv` | Per-town field coverage |
 
@@ -640,16 +645,14 @@ Ranked by how much each one would improve the answer, not by how easy it is to
 get. The first three are where the model is currently guessing hardest, and all
 three are public records.
 
-**1. Municipal zoning, with dimensional standards.** The single biggest gap.
-`zoning` and `buildable_envelope` are 0% authoritative today, together 28% of the
-confidence weight, and two feasibility gates cannot fire at all. Every buildable
-square foot in the pro forma is inferred from what got built nearby rather than
-from what the bylaw allows. Wanted: minimum lot area and frontage, setbacks, max
-FAR or lot coverage, and height, per district — plus the district geometry, since
-the assessor's `ZONING` transcription is not the authoritative map and Wellesley
-ships it empty. Sources: each town's GIS zoning layer and bylaw tables; the
-Massachusetts Zoning Atlas / MAPC for a regional version. Load into
-`pipeline/zoning_minimums.csv`.
+**1. Full buildable envelopes and parcel-specific rebuild rights.** Minimum lot
+area is now enforced as a hard eligibility rule, and official district geometry
+is joined for Newton and Wellesley. The model also uses bylaw FAR or coverage
+limits where the source table supplies them. Remaining work: authoritative
+Wayland and Weston district geometry, lot-creation dates, setbacks, height,
+variances, and determinations of grandfathered status. Until those facts are
+verified, an unmatched or undersized lot is blocked rather than treated as a
+plausible teardown.
 
 **2. Building permits — demolition joined to new dwelling.** The only direct
 observation of the target event, and the label the validation most wants. Today

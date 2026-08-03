@@ -88,6 +88,10 @@ RAW_COLUMNS = """
 # is absent by default and the build works without it; each absence costs data
 # confidence rather than silently defaulting to a favourable value.
 OPTIONAL_INPUTS = {
+    # town,loc_id,zoning,authority,source_url,as_of. Spatial assignments from
+    # official municipal zoning polygons override assessor transcriptions.
+    "zoning_assignments": ("zoning_assignments.csv", "build",
+                           "parcel-to-district assignments from official GIS"),
     # town,zoning,min_lot_acres,min_frontage_ft,max_far,max_lot_coverage,
     # authority,source_url,as_of
     "zoning_minimums": ("zoning_minimums.csv", "build",
@@ -511,6 +515,31 @@ def optional_inputs(cfg_dir: Path, quiet=False) -> dict[str, Path]:
 
 def build_components(con, cfg, inputs: dict[str, Path], quiet=False):
     """Raw per-parcel signals and joined optional inputs. No ranking yet."""
+    zassign = inputs.get("zoning_assignments")
+    if zassign:
+        con.execute(f"""CREATE OR REPLACE TEMP VIEW zassign AS
+                        SELECT * FROM read_csv_auto('{zassign}')""")
+        have_assign = {c.lower() for c in
+                       (r[0] for r in con.execute("DESCRIBE zassign").fetchall())}
+        required = {"town", "loc_id", "zoning"}
+        missing = required - have_assign
+        if missing:
+            raise ValueError(f"zoning_assignments.csv missing columns: {sorted(missing)}")
+        dupes = con.execute("""SELECT count(*) FROM (
+                                 SELECT town, loc_id FROM zassign
+                                 GROUP BY 1, 2 HAVING count(*) > 1)""").fetchone()[0]
+        if dupes:
+            raise ValueError(f"zoning_assignments.csv has {dupes} duplicate parcel keys")
+        assign_join = ("LEFT JOIN zassign za ON upper(za.town) = upper(p.town) "
+                       "AND za.loc_id = p.loc_id")
+        zone_expr = "coalesce(nullif(trim(za.zoning), ''), p.zoning)"
+        assignment_authority = ("za.authority" if "authority" in have_assign
+                                else "NULL")
+    else:
+        assign_join = ""
+        zone_expr = "p.zoning"
+        assignment_authority = "NULL"
+
     zmin = inputs.get("zoning_minimums")
     if zmin:
         con.execute(f"""CREATE OR REPLACE TEMP VIEW zmin AS
@@ -518,20 +547,26 @@ def build_components(con, cfg, inputs: dict[str, Path], quiet=False):
         have = {c.lower() for c in
                 (r[0] for r in con.execute("DESCRIBE zmin").fetchall())}
         opt = lambda c: (f"z.{c}::DOUBLE" if c in have else "NULL::DOUBLE")
-        zjoin = ("LEFT JOIN zmin z ON upper(z.town) = upper(p.town) "
-                 "AND upper(z.zoning) = upper(p.zoning)")
+        zjoin = (f"{assign_join} LEFT JOIN zmin z "
+                 f"ON upper(z.town) = upper(p.town) "
+                 # Newton appends overlay codes (for example SR2/MRT); the
+                 # underlying district still supplies single-family lot area.
+                 f"AND upper(z.zoning) = upper(split_part({zone_expr}, '/', 1))")
         zcols = f"""
           {opt('min_lot_acres')} AS min_lot_acres,
           {opt('min_frontage_ft')} AS min_frontage_ft,
           {opt('max_far')} AS max_far,
           {opt('max_lot_coverage')} AS max_lot_coverage,
-          {('z.authority' if 'authority' in have else 'NULL')}::VARCHAR
-            AS zoning_authority"""
+          coalesce({assignment_authority},
+                   {('z.authority' if 'authority' in have else 'NULL')})::VARCHAR
+            AS zoning_authority,
+          {assignment_authority}::VARCHAR AS zoning_assignment_authority"""
     else:
-        zjoin = ""
+        zjoin = assign_join
         zcols = """NULL::DOUBLE AS min_lot_acres, NULL::DOUBLE AS min_frontage_ft,
                    NULL::DOUBLE AS max_far, NULL::DOUBLE AS max_lot_coverage,
-                   NULL::VARCHAR AS zoning_authority"""
+                   """ + f"""{assignment_authority}::VARCHAR AS zoning_authority,
+                   {assignment_authority}::VARCHAR AS zoning_assignment_authority"""
 
     lst = inputs.get("listings")
     if lst:
@@ -558,7 +593,8 @@ def build_components(con, cfg, inputs: dict[str, Path], quiet=False):
     con.execute(f"""
     CREATE OR REPLACE TABLE comp AS
     SELECT row_number() OVER (ORDER BY p.town, p.loc_id, p.prop_id) AS row_id,
-           p.* EXCLUDE (gis_acres), {zcols}, {lcols},
+           p.* EXCLUDE (gis_acres, zoning), {zone_expr} AS zoning,
+           {zcols}, {lcols},
            fl.flag_wetland_m, fl.flag_sewer, fl.flag_flood, fl.flag_acec,
            fl.flag_historic, fl.flag_historic_area,
            fl.flag_historic_designations,
@@ -619,6 +655,11 @@ def build_components(con, cfg, inputs: dict[str, Path], quiet=False):
         n = con.execute("SELECT count(*) FROM comp WHERE min_lot_acres IS NOT NULL"
                         ).fetchone()[0]
         quiet or log(f"  zoning minimums matched {n:,} parcels")
+    if zassign:
+        n = con.execute("""SELECT count(*) FROM raw_parcels p JOIN zassign za
+                           ON upper(za.town) = upper(p.town)
+                          AND za.loc_id = p.loc_id""").fetchone()[0]
+        quiet or log(f"  official GIS zoning assigned {n:,} parcels")
 
 
 def completeness(con, out: Path, name="parcels") -> dict[tuple[str, str], float]:
@@ -779,7 +820,8 @@ SELECT_COMP = """
          year_built, lot_acres, lot_acres_used, gis_acres, land_val, bldg_val,
          total_val, ls_price, ls_year, land_ratio, impr_psf, far,
          years_since_sale, min_lot_acres, min_frontage_ft, max_far,
-         max_lot_coverage, zoning, absentee, estate, care_of,
+         max_lot_coverage, zoning, zoning_assignment_authority,
+         absentee, estate, care_of,
          bldg_val_missing, n_records_on_parcel, lot_compactness, lot_width_ft,
          lot_depth_ft, fp_area_sqft, fp_min_setback_ft,
          flag_wetland_m, flag_sewer, flag_flood, flag_acec, flag_historic,
@@ -799,7 +841,8 @@ def _arrays(con) -> dict[str, np.ndarray]:
     d = cur.fetchnumpy()
     out = {}
     for k, v in d.items():
-        if k in ("town", "zoning", "flag_flood", "flag_acec", "flag_historic",
+        if k in ("town", "zoning", "zoning_assignment_authority",
+                 "flag_flood", "flag_acec", "flag_historic",
                  "flag_historic_area", "flag_historic_designations",
                  "listing_status"):
             out[k] = np.asarray(v, dtype=object)
@@ -900,7 +943,8 @@ def score_parcels(con, cfg, cov, out: Path, name="parcels", quiet=False,
     # the downzoning comparison, because the envelope is inferred from the
     # living area of new builds.
     feas, feas_notes, gate_masks = model.feasibility(
-        {**d, "existing_living_sqft": d["res_area"]}, cfg, envelope_raw,
+        {**d, "lot_acres": d["lot_acres_used"],
+         "existing_living_sqft": d["res_area"]}, cfg, envelope_raw,
         buildable_sqft)
 
     # ---- economics -------------------------------------------------------
@@ -987,11 +1031,16 @@ def score_parcels(con, cfg, cov, out: Path, name="parcels", quiet=False,
         lot_agree = (np.isfinite(d["lot_acres"]) & np.isfinite(d["gis_acres"])
                      & (np.abs(d["lot_acres"] - d["gis_acres"])
                         <= 0.25 * np.fmax(d["lot_acres"], d["gis_acres"])))
+    official_zone = np.array([
+        v is not None and str(v) for v in d["zoning_assignment_authority"]
+    ], dtype=bool)
+    known_zone = np.array([
+        v is not None and str(v) for v in d["zoning"]
+    ], dtype=bool)
     prov = {
-        "zoning": np.where(np.isfinite(d["min_lot_acres"]), AUTHORITATIVE,
-                           np.where([v is not None and str(v) != ""
-                                     for v in d["zoning"]],
-                                    ESTIMATED, MISSING)),
+        "zoning": np.where(np.isfinite(d["min_lot_acres"]) & official_zone,
+                           AUTHORITATIVE,
+                           np.where(known_zone, ESTIMATED, MISSING)),
         # "authoritative" here means the resale value rests on enough RECORDED
         # local new-build sales, not that the number itself is a fact.
         "resale_value": np.where(np.isfinite(arv) & enough_local, AUTHORITATIVE,
@@ -1066,6 +1115,7 @@ def score_parcels(con, cfg, cov, out: Path, name="parcels", quiet=False,
       SELECT c.town, c.town_id, c.release, c.fy, c.loc_id, c.prop_id,
              c.site_addr, c.city, c.owner1, c.own_addr, c.own_city, c.own_state,
              c.own_co, c.use_code, c.use_desc, c.zoning, c.zoning_authority,
+             c.zoning_assignment_authority,
              c.style, c.stories, c.num_rooms, c.units,
              c.land_val, c.bldg_val, c.other_val, c.total_val,
              c.year_built, c.res_area, c.bld_area, c.existing_sqft,
@@ -1313,16 +1363,17 @@ def _selfcheck():
     con = duckdb.connect()
     con.execute("""
       CREATE TABLE comp AS SELECT * FROM (VALUES
-        (1,'T',0.0,0.0,  4000,4000,4000.0, 2019, 0.30,0.30,0.30, 900000,1600000,2500000, 2500000, 2019.0, 0.36,400.0,0.31, 6.0, NULL,NULL,NULL,NULL,'R', false,false,false, false, 1, 0.8, 120.0,150.0, NULL,NULL, NULL,true,NULL,NULL,NULL,NULL,NULL, NULL,NULL,NULL,NULL),
-        (2,'T',100.0,0.0, 4200,4200,4200.0, 2020, 0.32,0.32,0.32, 950000,1700000,2650000, 2700000, 2021.0, 0.36,405.0,0.30, 4.0, NULL,NULL,NULL,NULL,'R', false,false,false, false, 1, 0.8, 120.0,150.0, NULL,NULL, NULL,true,NULL,NULL,NULL,NULL,NULL, NULL,NULL,NULL,NULL),
-        (3,'T',200.0,0.0, 3900,3900,3900.0, 2021, 0.28,0.28,0.28, 900000,1600000,2500000, 2600000, 2022.0, 0.36,410.0,0.32, 3.0, NULL,NULL,NULL,NULL,'R', false,false,false, false, 1, 0.8, 120.0,150.0, NULL,NULL, NULL,true,NULL,NULL,NULL,NULL,NULL, NULL,NULL,NULL,NULL),
-        (4,'T',300.0,0.0, 4100,4100,4100.0, 2022, 0.31,0.31,0.31, 950000,1750000,2700000, 2800000, 2023.0, 0.35,420.0,0.30, 2.0, NULL,NULL,NULL,NULL,'R', false,false,false, false, 1, 0.8, 120.0,150.0, NULL,NULL, NULL,true,NULL,NULL,NULL,NULL,NULL, NULL,NULL,NULL,NULL),
-        (5,'T',150.0,50.0, 1600,1600,1600.0, 1955, 0.30,0.30,0.30, 900000,150000,1050000, 420000, 1994.0, 0.857,93.75,0.12, 31.0, NULL,NULL,NULL,NULL,'R', true,false,false, false, 1, 0.8, 120.0,150.0, NULL,NULL, NULL,true,NULL,NULL,NULL,NULL,NULL, NULL,NULL,NULL,NULL)
+        (1,'T',0.0,0.0,  4000,4000,4000.0, 2019, 0.30,0.30,0.30, 900000,1600000,2500000, 2500000, 2019.0, 0.36,400.0,0.31, 6.0, NULL,NULL,NULL,NULL,'R',NULL, false,false,false, false, 1, 0.8, 120.0,150.0, NULL,NULL, NULL,true,NULL,NULL,NULL,NULL,NULL, NULL,NULL,NULL,NULL),
+        (2,'T',100.0,0.0, 4200,4200,4200.0, 2020, 0.32,0.32,0.32, 950000,1700000,2650000, 2700000, 2021.0, 0.36,405.0,0.30, 4.0, NULL,NULL,NULL,NULL,'R',NULL, false,false,false, false, 1, 0.8, 120.0,150.0, NULL,NULL, NULL,true,NULL,NULL,NULL,NULL,NULL, NULL,NULL,NULL,NULL),
+        (3,'T',200.0,0.0, 3900,3900,3900.0, 2021, 0.28,0.28,0.28, 900000,1600000,2500000, 2600000, 2022.0, 0.36,410.0,0.32, 3.0, NULL,NULL,NULL,NULL,'R',NULL, false,false,false, false, 1, 0.8, 120.0,150.0, NULL,NULL, NULL,true,NULL,NULL,NULL,NULL,NULL, NULL,NULL,NULL,NULL),
+        (4,'T',300.0,0.0, 4100,4100,4100.0, 2022, 0.31,0.31,0.31, 950000,1750000,2700000, 2800000, 2023.0, 0.35,420.0,0.30, 2.0, NULL,NULL,NULL,NULL,'R',NULL, false,false,false, false, 1, 0.8, 120.0,150.0, NULL,NULL, NULL,true,NULL,NULL,NULL,NULL,NULL, NULL,NULL,NULL,NULL),
+        (5,'T',150.0,50.0, 1600,1600,1600.0, 1955, 0.30,0.30,0.30, 900000,150000,1050000, 420000, 1994.0, 0.857,93.75,0.12, 31.0, NULL,NULL,NULL,NULL,'R',NULL, true,false,false, false, 1, 0.8, 120.0,150.0, NULL,NULL, NULL,true,NULL,NULL,NULL,NULL,NULL, NULL,NULL,NULL,NULL)
       ) AS t(row_id,town,x26986,y26986,res_area,bld_area,existing_sqft,
              year_built,lot_acres,lot_acres_used,gis_acres,land_val,bldg_val,
              total_val,ls_price,ls_year,land_ratio,impr_psf,far,
              years_since_sale,min_lot_acres,min_frontage_ft,max_far,
-             max_lot_coverage,zoning,absentee,estate,care_of,bldg_val_missing,
+             max_lot_coverage,zoning,zoning_assignment_authority,
+             absentee,estate,care_of,bldg_val_missing,
              n_records_on_parcel,lot_compactness,lot_width_ft,lot_depth_ft,
              fp_area_sqft,fp_min_setback_ft,flag_wetland_m,flag_sewer,
              flag_flood,flag_acec,flag_historic,flag_historic_area,

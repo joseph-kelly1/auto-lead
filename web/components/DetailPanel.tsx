@@ -354,10 +354,14 @@ export default function DetailPanel({
         <Stat k="Lot width (bbox)" v={`${fmt.num(n("lot_width_ft"))} ft`} />
         <Stat k="Zoning" v={s("zoning") ?? "not reported"} />
         <Stat
+          k="District source"
+          v={s("zoning_assignment_authority") ?? "assessor transcription"}
+        />
+        <Stat
           k="Zoning minimum"
           v={
             n("min_lot_acres") == null
-              ? "no authoritative table loaded"
+              ? "no applicable minimum matched"
               : fmt.acres(n("min_lot_acres"))
           }
         />

@@ -1,0 +1,25 @@
+town,zoning,min_lot_acres,min_frontage_ft,max_far,max_lot_coverage,authority,source_url,as_of
+Newton,SR1,0.5739210285,140,,0.15,City of Newton Zoning Ordinance Sec. 3.1.3,https://www.newtonma.gov/home/showpublisheddocument/29823/638887019852292948,2025-12-01
+Newton,SR2,0.3443526171,100,,0.20,City of Newton Zoning Ordinance Sec. 3.1.3,https://www.newtonma.gov/home/showpublisheddocument/29823/638887019852292948,2025-12-01
+Newton,SR3,0.2295684114,80,,0.30,City of Newton Zoning Ordinance Sec. 3.1.3,https://www.newtonma.gov/home/showpublisheddocument/29823/638887019852292948,2025-12-01
+Newton,MR1,0.2295684114,80,,0.30,City of Newton Zoning Ordinance Sec. 3.2.3,https://www.newtonma.gov/home/showpublisheddocument/29823/638887019852292948,2025-12-01
+Newton,MR2,0.2295684114,80,,0.30,City of Newton Zoning Ordinance Sec. 3.2.3,https://www.newtonma.gov/home/showpublisheddocument/29823/638887019852292948,2025-12-01
+Newton,MR3,0.2295684114,80,,0.30,City of Newton Zoning Ordinance Sec. 3.2.3,https://www.newtonma.gov/home/showpublisheddocument/29823/638887019852292948,2025-12-01
+Newton,MR4,0.2295684114,80,,0.30,City of Newton Zoning Ordinance Sec. 3.2.3,https://www.newtonma.gov/home/showpublisheddocument/29823/638887019852292948,2025-12-01
+Wayland,R20,0.4591368228,120,,0.20,Town of Wayland Schedule A,https://www.wayland.ma.us/building-department/files/table-dimensional-requirements,2025-03-01
+Wayland,R30,0.6887052342,150,,0.20,Town of Wayland Schedule A,https://www.wayland.ma.us/building-department/files/table-dimensional-requirements,2025-03-01
+Wayland,R40,0.9182736455,180,,0.20,Town of Wayland Schedule A,https://www.wayland.ma.us/building-department/files/table-dimensional-requirements,2025-03-01
+Wayland,R60,1.3774104683,210,,0.20,Town of Wayland Schedule A,https://www.wayland.ma.us/building-department/files/table-dimensional-requirements,2025-03-01
+Wellesley,SR10,0.2295684114,90,,,Town of Wellesley Zoning Bylaw Sec. 5.2-5.3,https://www.wellesleyma.gov/DocumentCenter/View/12119/Full-Zoning-Bylaw-as-of-2025-ATM,2025-04-01
+Wellesley,SR15,0.3443526171,100,,,Town of Wellesley Zoning Bylaw Sec. 5.2-5.3,https://www.wellesleyma.gov/DocumentCenter/View/12119/Full-Zoning-Bylaw-as-of-2025-ATM,2025-04-01
+Wellesley,SR20,0.4591368228,110,,,Town of Wellesley Zoning Bylaw Sec. 5.2-5.3,https://www.wellesleyma.gov/DocumentCenter/View/12119/Full-Zoning-Bylaw-as-of-2025-ATM,2025-04-01
+Wellesley,SR30,0.6887052342,175,,,Town of Wellesley Zoning Bylaw Sec. 5.2-5.3,https://www.wellesleyma.gov/DocumentCenter/View/12119/Full-Zoning-Bylaw-as-of-2025-ATM,2025-04-01
+Wellesley,SR40,0.9182736455,200,,,Town of Wellesley Zoning Bylaw Sec. 5.2-5.3,https://www.wellesleyma.gov/DocumentCenter/View/12119/Full-Zoning-Bylaw-as-of-2025-ATM,2025-04-01
+Wellesley,Bus,0.2295684114,,,,Town of Wellesley Zoning Bylaw Sec. 5.2.A,https://www.wellesleyma.gov/DocumentCenter/View/12119/Full-Zoning-Bylaw-as-of-2025-ATM,2025-04-01
+Wellesley,Bus A,0.2295684114,,,,Town of Wellesley Zoning Bylaw Sec. 5.2.A,https://www.wellesleyma.gov/DocumentCenter/View/12119/Full-Zoning-Bylaw-as-of-2025-ATM,2025-04-01
+Wellesley,Ind,0.2295684114,,,,Town of Wellesley Zoning Bylaw Sec. 5.2.A,https://www.wellesleyma.gov/DocumentCenter/View/12119/Full-Zoning-Bylaw-as-of-2025-ATM,2025-04-01
+Wellesley,Ind A,0.2295684114,,,,Town of Wellesley Zoning Bylaw Sec. 5.2.A,https://www.wellesleyma.gov/DocumentCenter/View/12119/Full-Zoning-Bylaw-as-of-2025-ATM,2025-04-01
+Weston,A,1.3774104683,250,,,Town of Weston Zoning Bylaw conventional dimensional requirements,https://www.westonma.gov/1319/Zoning-Requirements,2026-08-03
+Weston,B,0.9182736455,200,,,Town of Weston Zoning Bylaw conventional dimensional requirements,https://www.westonma.gov/1319/Zoning-Requirements,2026-08-03
+Weston,C,0.6887052342,175,,,Town of Weston Zoning Bylaw conventional dimensional requirements,https://www.westonma.gov/1319/Zoning-Requirements,2026-08-03
+Weston,D,0.4591368228,150,,,Town of Weston Zoning Bylaw conventional dimensional requirements,https://www.westonma.gov/1319/Zoning-Requirements,2026-08-03
