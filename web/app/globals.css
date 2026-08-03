@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+/* --------------------------------------------------------------------------
+   Tokens.
+
+   The dark is a green-cast graphite rather than the reflexive blue-slate.
+   Blue-cast darks turn the warm end of a sequential ramp muddy; a green cast
+   lets ochre and sand stay clean, and it is simply less worn than #0f172a.
+
+   The score ramp is monotonic in lightness, so it survives greyscale and
+   deuteranopia and never reads as a green-to-red status palette. It is the
+   only saturated thing on screen apart from selection.
+   -------------------------------------------------------------------------- */
+@theme {
+  --color-surface: #121614; /* app background */
+  --color-panel: #191e1b;   /* rail, table header, detail panel */
+  --color-line: #2a322d;    /* borders and gridlines */
+  --color-text: #dde4de;    /* primary */
+  --color-muted: #7e8b83;   /* labels, secondary */
+  --color-select: #e8b24c;  /* selection, and nothing else */
+
+  --color-s0: #1c3a38;
+  --color-s1: #2c5c55;
+  --color-s2: #47857a;
+  --color-s3: #78a986;
+  --color-s4: #b9c98e;
+  --color-s5: #d8c48f;
+
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* Four sizes is enough for an instrument. */
+  --text-label: 11px;
+  --text-body: 13px;
+  --text-title: 15px;
+  --text-figure: 22px;
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+}
+
+/* Numbers align down the page everywhere they are read as data. Plex Sans has
+   real tabular figures, so the table stays denser than it would in mono; mono
+   is reserved for identifiers. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.label {
+  font-size: var(--text-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-select);
+  outline-offset: 1px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+input[type="range"] {
+  accent-color: var(--color-s3);
+}

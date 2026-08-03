@@ -1,0 +1,76 @@
+[run]
+towns = ["NEWTON", "WAYLAND", "WELLESLEY", "WESTON"]
+raw_dir = "../data/raw"
+out_dir = "../artifacts"
+
+# "town"         - percentile-rank each component within municipality
+# "neighborhood" - percentile-rank within the k nearest parcels (see [neighborhood])
+percentile_scope = "town"
+
+[filters]
+# Only these use codes are scored. 101 = single family.
+# 104/105 (2-3 family) deliberately excluded: income-based valuation makes
+# land_ratio and area_vs_nbhd mean something different, and demolishing
+# occupied rental units carries a different regulatory burden.
+include_use_codes = ["101"]
+
+# A parcel polygon is dropped entirely if ANY assessment row on it has one of
+# these prefixes. 102 = condo (fractional land values are an accounting
+# artifact); 9 = exempt (municipal, religious, educational).
+exclude_parcel_if_any_use_prefix = ["102", "9"]
+
+# Tax parcel polygon types to keep. ROW / PRIV_ROW / RAIL_ROW / WATER are not
+# taxable property.
+poly_types = ["FEE", "TAX"]
+
+[neighborhood]
+# Nearest-k comparable parcels by centroid distance in EPSG:26986 (meters).
+# Used for area_vs_nbhd, and for percentile ranking when
+# run.percentile_scope = "neighborhood".
+k = 200
+
+[age]
+# "band"         - preference band. Old enough to be functionally obsolete,
+#                  new enough that no historical commission cares. In MetroWest
+#                  pre-1900 correlates with demolition delay applying, i.e. with
+#                  the deal being blocked.
+# "older_better" - monotonic. Kept so calibrate.py can compare the two.
+mode = "band"
+peak_lo = 1945
+peak_hi = 1975
+falloff_years = 35
+
+[weights]
+# Tuned for building to sell, where subdivision potential is where the margin
+# is. lot_vs_zoning_min is doubled to 0.20; the weight came mostly out of
+# impr_psf, which correlates 0.91 with land_ratio and is the cheapest thing to
+# thin. INERT until zoning_minimums.csv exists - the component is null
+# everywhere until then and its weight is redistributed to the rest.
+land_ratio = 0.28
+impr_psf = 0.10
+area_vs_nbhd = 0.14
+far = 0.10
+years_since_sale = 0.08
+lot_vs_zoning_min = 0.20
+age = 0.05
+absentee = 0.05
+
+[completeness]
+# If a town populates a field for fewer than this fraction of its scored
+# parcels, that component is dropped for the whole town rather than ranking
+# its parcels against each other on noise. The component's weight is
+# redistributed; score_coverage records how much weight survived.
+min_town_coverage = 0.5
+
+[flags]
+# Spatial pre-flags against MassGIS constraint layers, joined in EPSG:26986.
+# These mark a parcel as needing review; none of them asserts a conclusion.
+# Set false to skip the ~360 MB of statewide layer downloads.
+enabled = true
+# How far to look for a wetland before giving up. Beyond this the distance is
+# null, which means "not near one we know of", not "no wetland".
+wetland_search_m = 250.0
+
+[tiles]
+min_zoom = 10
+max_zoom = 16
