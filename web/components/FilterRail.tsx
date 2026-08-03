@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { ACRE_MAX, DEFAULT_FILTERS, YEAR_MAX, YEAR_MIN, type Filters } from "@/lib/schema";
 import { STATUSES, type Store, exportFile, importFile } from "@/lib/annotations";
 import { fmt } from "@/lib/format";
+import CredentialsDialog from "@/components/CredentialsDialog";
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -227,6 +228,7 @@ export default function FilterRail({
       </Field>
 
       <div className="mt-auto space-y-2 border-t border-line pt-4">
+        <CredentialsDialog />
         <button
           onClick={() => setFilters(DEFAULT_FILTERS)}
           className="w-full rounded-sm border border-line py-1.5 hover:border-muted"

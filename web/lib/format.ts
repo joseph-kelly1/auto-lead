@@ -18,6 +18,7 @@ export const fmt = {
     v == null ? "—" : v >= 1e6 ? `$${(v / 1e6).toFixed(2)}M` : `$${Math.round(v / 1e3)}k`,
   num: (v: number | null, d = 0) =>
     v == null ? "—" : v.toLocaleString("en-US", { maximumFractionDigits: d }),
+  year: (v: number | null) => (v == null ? "—" : String(Math.trunc(v))),
   pct: (v: number | null, d = 0) => (v == null ? "—" : `${(v * 100).toFixed(d)}%`),
   ratio: (v: number | null) => (v == null ? "—" : v.toFixed(2)),
   ratio3: (v: number | null) => (v == null ? "—" : v.toFixed(3)),

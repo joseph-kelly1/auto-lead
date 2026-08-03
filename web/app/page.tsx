@@ -31,7 +31,11 @@ export default function Page() {
 
   const [hovered, setHovered] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const [scrollTo, setScrollTo] = useState<string | null>(null);
+  const [revealRequest, setRevealRequest] = useState<{
+    key: string;
+    sequence: number;
+  } | null>(null);
+  const revealSequence = useRef(0);
   const [flyTo, setFlyTo] = useState<{ lon: number; lat: number } | null>(null);
 
   const { store, update, replace } = useAnnotations();
@@ -105,6 +109,14 @@ export default function Page() {
     [rows],
   );
 
+  const revealRow = useCallback(
+    (key: string) => {
+      selectRow(key);
+      setRevealRequest({ key, sequence: ++revealSequence.current });
+    },
+    [selectRow],
+  );
+
   useEffect(() => {
     const esc = (e: KeyboardEvent) => e.key === "Escape" && setSelected(null);
     window.addEventListener("keydown", esc);
@@ -141,10 +153,13 @@ export default function Page() {
             onHover={(loc) => {
               const key = loc ? (byLoc.get(loc) ?? null) : null;
               setHovered(key);
-              setScrollTo(key);
             }}
             selected={selectedLoc}
-            onSelect={(loc) => selectRow(loc ? (byLoc.get(loc) ?? null) : null)}
+            onSelect={(loc) => {
+              const key = loc ? (byLoc.get(loc) ?? null) : null;
+              if (key) revealRow(key);
+              else selectRow(null);
+            }}
             flyTo={flyTo}
           />
         </div>
@@ -164,11 +179,11 @@ export default function Page() {
             hovered={hovered}
             onHover={(id) => {
               setHovered(id);
-              setScrollTo(null);
             }}
             selected={selected}
             onSelect={selectRow}
-            scrollTo={scrollTo}
+            onReveal={revealRow}
+            revealRequest={revealRequest}
           />
         </div>
       </div>

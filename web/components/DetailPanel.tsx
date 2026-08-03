@@ -5,6 +5,7 @@ import { COMPONENTS } from "@/lib/schema";
 import { query, sqlString } from "@/lib/duck";
 import { fmt, fmtBy, rampColor } from "@/lib/format";
 import { CHECKS, STATUSES, type Annotation, type Status } from "@/lib/annotations";
+import { loadMarketData, type MarketData } from "@/lib/market";
 
 type Row = Record<string, number | string | boolean | null>;
 
@@ -59,6 +60,9 @@ export default function DetailPanel({
 }) {
   const [row, setRow] = useState<Row | null>(null);
   const [note, setNote] = useState(annotation?.note ?? "");
+  const [market, setMarket] = useState<MarketData | null>(null);
+  const [marketError, setMarketError] = useState<string | null>(null);
+  const [marketRevision, setMarketRevision] = useState(0);
   const [locId, propId] = rowKey.split("|");
 
   useEffect(() => {
@@ -70,6 +74,42 @@ export default function DetailPanel({
   }, [locId, propId]);
 
   useEffect(() => setNote(annotation?.note ?? ""), [rowKey, annotation?.note]);
+
+  useEffect(() => {
+    const changed = () => setMarketRevision((revision) => revision + 1);
+    window.addEventListener("market-credentials-changed", changed);
+    return () => window.removeEventListener("market-credentials-changed", changed);
+  }, []);
+
+  useEffect(() => {
+    const address =
+      typeof row?.site_addr === "string" ? row.site_addr.trim() : "";
+    const town = typeof row?.town === "string" ? row.town.trim() : "";
+    if (!address || !town) {
+      setMarket(null);
+      setMarketError(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    setMarket(null);
+    setMarketError(null);
+    loadMarketData({
+      address,
+      town,
+      lat: row?.lat == null ? null : Number(row.lat),
+      lon: row?.lon == null ? null : Number(row.lon),
+      signal: controller.signal,
+    })
+      .then(setMarket)
+      .catch((reason: unknown) => {
+        if (!controller.signal.aborted)
+          setMarketError(
+            reason instanceof Error ? reason.message : "Market lookup failed.",
+          );
+      });
+    return () => controller.abort();
+  }, [row, marketRevision]);
 
   if (!row)
     return (
@@ -83,10 +123,11 @@ export default function DetailPanel({
   const scope = "pct_"; // town percentile; nbr_ holds the neighbourhood one
   const address = s("site_addr");
   const town = s("town");
-  const zillowUrl =
+  const zillowSearchUrl =
     address && town
       ? `https://www.zillow.com/homes/${encodeURIComponent(`${address}, ${town}, MA`)}_rb/`
       : null;
+  const zillowUrl = market?.zillow?.url ?? zillowSearchUrl;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col overflow-y-auto border-l border-line bg-panel md:static md:w-[340px] md:shrink-0">
@@ -161,7 +202,7 @@ export default function DetailPanel({
         <Stat k="Land" v={fmt.usd(n("land_val"))} />
         <Stat k="Structure" v={row.bldg_val_missing ? "not reported" : fmt.usd(n("bldg_val"))} />
         <Stat k="Total" v={fmt.usd(n("total_val"))} />
-        <Stat k="Built" v={fmt.num(n("year_built"))} />
+        <Stat k="Built" v={fmt.year(n("year_built"))} />
         <Stat k="Living area" v={`${fmt.num(n("res_area"))} sq ft`} />
         <Stat k="Lot (assessor)" v={fmt.acres(n("lot_acres"))} />
         <Stat k="Lot (mapped)" v={fmt.acres(n("gis_acres"))} />
@@ -183,6 +224,65 @@ export default function DetailPanel({
           </p>
         )}
       </section>
+
+      {(market?.configured || marketError) && (
+        <section className="border-b border-line px-4 py-3">
+          <p className="label mb-1">Current market</p>
+          {market?.mls ? (
+            <>
+              <Stat
+                k="MLS status"
+                v={`${market.mls.onMarket ? "On market" : "Off market"} · ${market.mls.status}`}
+              />
+              {market.mls.listPrice != null && (
+                <Stat k="List price" v={fmt.usd(market.mls.listPrice)} />
+              )}
+              {market.mls.closePrice != null && (
+                <Stat k="Close price" v={fmt.usd(market.mls.closePrice)} />
+              )}
+              {market.mls.listingId && (
+                <Stat k="MLS ID" v={market.mls.listingId} />
+              )}
+            </>
+          ) : market?.mlsConfigured ? (
+            <p className="py-1 text-[12px] text-muted">
+              No matching MLS listing returned.
+            </p>
+          ) : null}
+
+          {market?.zillow ? (
+            <>
+              <Stat k="Zestimate" v={fmt.usd(market.zillow.zestimate)} />
+              {(market.zillow.low != null || market.zillow.high != null) && (
+                <Stat
+                  k="Estimate range"
+                  v={`${fmt.usd(market.zillow.low)}–${fmt.usd(market.zillow.high)}`}
+                />
+              )}
+            </>
+          ) : market?.zillowConfigured ? (
+            <p className="py-1 text-[12px] text-muted">
+              No Zestimate returned for this address.
+            </p>
+          ) : null}
+
+          {market?.checkedAt && (
+            <p className="mt-2 text-[11px] text-muted">
+              Checked {market.checkedAt.slice(0, 10)} · cached for 24 hours
+            </p>
+          )}
+          {market?.errors?.map((error) => (
+            <p key={error} className="mt-1 text-[11px] leading-snug text-select">
+              {error}
+            </p>
+          ))}
+          {marketError && (
+            <p className="mt-1 text-[11px] leading-snug text-select">
+              {marketError}
+            </p>
+          )}
+        </section>
+      )}
 
       <section className="border-b border-line px-4 py-3">
         <p className="label mb-2">Site constraints</p>

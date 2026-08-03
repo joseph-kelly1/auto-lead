@@ -194,10 +194,35 @@ Deployment uses Vercel's Git integration; there is no CLI deployment step.
 1. Commit and push the repository to GitHub.
 2. In Vercel, choose **Add New → Project** and import this repository.
 3. Set **Root Directory** to `web`.
-4. Leave Framework Preset as **Next.js** and leave the build, install and
+4. Open the project's **Storage** tab, create a **Blob** store with access set
+   to **Private**, and connect it to this project for the Production and Preview
+   environments you intend to use.
+5. Add a sensitive `APP_ACCESS_KEY` environment variable containing at least
+   24 random characters. Add it to Production and Preview if both should be
+   protected.
+6. Leave Framework Preset as **Next.js** and leave the build, install and
    output settings at their detected defaults.
-5. Deploy. Pushes to `main` become production deployments; other branches and
+7. Deploy. Pushes to `main` become production deployments; other branches and
    pull requests get preview deployments.
+
+The app uses that one shared key as its login. A successful login creates a
+signed, HttpOnly 30-day session cookie. The key is server-only: do not hardcode
+it or prefix it with `NEXT_PUBLIC_`, because either would expose it in Git or
+the browser bundle.
+
+After signing in, **API credentials** at the bottom of the filter rail accepts
+a Zillow/Bridge server token plus an MLS PIN/Bridge server token and dataset
+code. The app encrypts these with `APP_ACCESS_KEY` before writing one shared
+record to the private Blob store. They are available to both users on every
+browser and are never returned to client-side JavaScript. Rotating
+`APP_ACCESS_KEY` also rotates the encryption key, so re-enter the provider
+credentials afterward.
+
+When configured, opening a property queries the official Bridge Zestimate and
+RESO Web API endpoints. The detail panel shows Zestimate, estimate range, MLS
+status, list/close price and listing ID. Results are cached locally for 24
+hours. With no provider credentials, the market section stays hidden and no
+provider request is made.
 
 The required `web/public/parcels.parquet` and `web/public/parcels.pmtiles`
 files are checked into Git so a clean Vercel clone has everything it needs.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Parcel } from "@/lib/schema";
 import { fmt, rampColor } from "@/lib/format";
 
@@ -39,7 +39,7 @@ const COLS: {
     w: "minmax(160px,1fr)",
     render: (p) => p.site_addr ?? "—",
   },
-  { key: "year_built", head: "Built", w: "56px", num: true, render: (p) => fmt.num(p.year_built) },
+  { key: "year_built", head: "Built", w: "56px", num: true, render: (p) => fmt.year(p.year_built) },
   { key: "res_area", head: "Living", w: "68px", num: true, render: (p) => fmt.num(p.res_area) },
   { key: "lot_acres", head: "Lot", w: "62px", num: true, render: (p) => p.lot_acres?.toFixed(2) ?? "—" },
   {
@@ -61,6 +61,22 @@ const COLS: {
 
 const GRID = COLS.map((c) => c.w).join(" ");
 
+function Cells({ parcel }: { parcel: Parcel }) {
+  return COLS.map((c) => (
+    <span
+      key={c.key}
+      className={`truncate ${c.num ? "text-right" : ""} ${
+        c.key === "score_coverage" && parcel.score_coverage < 0.7
+          ? "text-select"
+          : ""
+      }`}
+      title={c.key === "site_addr" ? (parcel.site_addr ?? "") : undefined}
+    >
+      {c.render(parcel)}
+    </span>
+  ));
+}
+
 export default function ParcelTable({
   rows,
   loading,
@@ -71,7 +87,8 @@ export default function ParcelTable({
   onHover,
   selected,
   onSelect,
-  scrollTo,
+  onReveal,
+  revealRequest,
 }: {
   rows: Parcel[];
   loading: boolean;
@@ -82,7 +99,8 @@ export default function ParcelTable({
   onHover: (id: string | null) => void;
   selected: string | null;
   onSelect: (id: string | null) => void;
-  scrollTo: string | null;
+  onReveal: (id: string) => void;
+  revealRequest: { key: string; sequence: number } | null;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const [top, setTop] = useState(0);
@@ -97,17 +115,23 @@ export default function ParcelTable({
     return () => ro.disconnect();
   }, []);
 
-  // Map hover scrolls the matching row into view, but only when it is off
-  // screen — otherwise the list jitters as the pointer crosses parcels.
+  // Only an explicit click reveals a map parcel in the scrolling list. Hover
+  // is represented by the pinned preview row and never changes scroll position.
   useEffect(() => {
-    if (!scrollTo || !box.current) return;
-    const i = rows.findIndex((r) => r.row_key === scrollTo);
+    if (!revealRequest || !box.current) return;
+    const i = rows.findIndex((r) => r.row_key === revealRequest.key);
     if (i < 0) return;
     const el = box.current;
     const y = i * ROW;
     if (y < el.scrollTop || y + ROW > el.scrollTop + el.clientHeight)
       el.scrollTo({ top: Math.max(0, y - el.clientHeight / 2) });
-  }, [scrollTo, rows]);
+  }, [revealRequest, rows]);
+
+  const rowByKey = useMemo(
+    () => new Map(rows.map((row) => [row.row_key, row])),
+    [rows],
+  );
+  const hoveredParcel = hovered ? rowByKey.get(hovered) : undefined;
 
   const start = Math.max(0, Math.floor(top / ROW) - OVERSCAN);
   const end = Math.min(rows.length, Math.ceil((top + height) / ROW) + OVERSCAN);
@@ -134,6 +158,31 @@ export default function ParcelTable({
           </button>
         ))}
       </div>
+
+      <button
+        type="button"
+        disabled={!hoveredParcel}
+        onClick={() => hoveredParcel && onReveal(hoveredParcel.row_key)}
+        className={`tnum grid min-w-[760px] shrink-0 items-center gap-x-3 border-b px-3 text-left ${
+          hoveredParcel
+            ? "border-select/40 bg-select/10 hover:bg-select/15"
+            : "border-line bg-surface text-muted"
+        }`}
+        style={{ gridTemplateColumns: GRID, height: ROW }}
+        aria-label={
+          hoveredParcel
+            ? `Reveal ${hoveredParcel.site_addr ?? "hovered parcel"} in the list`
+            : undefined
+        }
+      >
+        {hoveredParcel ? (
+          <Cells parcel={hoveredParcel} />
+        ) : (
+          <span className="col-span-full text-[11px]">
+            Hover over a parcel to preview it here
+          </span>
+        )}
+      </button>
 
       <div ref={box} onScroll={(e) => setTop(e.currentTarget.scrollTop)} className="min-h-0 min-w-[760px] flex-1 overflow-y-auto">
         {rows.length === 0 ? (
@@ -172,19 +221,7 @@ export default function ParcelTable({
                     }`}
                     style={{ gridTemplateColumns: GRID, height: ROW }}
                   >
-                    {COLS.map((c) => (
-                      <span
-                        key={c.key}
-                        className={`truncate ${c.num ? "text-right" : ""} ${
-                          c.key === "score_coverage" && p.score_coverage < 0.7
-                            ? "text-select"
-                            : ""
-                        }`}
-                        title={c.key === "site_addr" ? (p.site_addr ?? "") : undefined}
-                      >
-                        {c.render(p)}
-                      </span>
-                    ))}
+                    <Cells parcel={p} />
                   </div>
                 );
               })}
