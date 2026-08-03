@@ -14,7 +14,7 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Teardown screener",
+  title: "Auto Lead",
   description: "Massachusetts parcels where the land outvalues the structure",
 };
 

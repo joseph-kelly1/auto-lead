@@ -39,23 +39,44 @@ const COLS: {
     w: "minmax(160px,1fr)",
     render: (p) => p.site_addr ?? "—",
   },
+  {
+    key: "margin",
+    head: "Margin",
+    w: "66px",
+    num: true,
+    render: (p) => fmt.pct(p.margin, 1),
+  },
+  {
+    key: "profit",
+    head: "Profit",
+    w: "76px",
+    num: true,
+    render: (p) => fmt.usdK(p.profit),
+  },
+  { key: "arv", head: "Value", w: "76px", num: true, render: (p) => fmt.usdK(p.arv) },
+  {
+    key: "acq_price",
+    head: "Acquire",
+    w: "76px",
+    num: true,
+    render: (p) => fmt.usdK(p.acq_price),
+  },
+  {
+    key: "rebuild_feasibility_score",
+    head: "Feas",
+    w: "52px",
+    num: true,
+    render: (p) => p.rebuild_feasibility_score.toFixed(2),
+  },
   { key: "year_built", head: "Built", w: "56px", num: true, render: (p) => fmt.year(p.year_built) },
   { key: "res_area", head: "Living", w: "68px", num: true, render: (p) => fmt.num(p.res_area) },
   { key: "lot_acres", head: "Lot", w: "62px", num: true, render: (p) => p.lot_acres?.toFixed(2) ?? "—" },
   {
-    key: "val_land_ratio",
-    head: "Land %",
-    w: "62px",
-    num: true,
-    render: (p) => fmt.pct(p.val_land_ratio),
-  },
-  { key: "land_val", head: "Land", w: "76px", num: true, render: (p) => fmt.usdK(p.land_val) },
-  {
-    key: "score_coverage",
-    head: "Cov",
+    key: "data_confidence_score",
+    head: "Conf",
     w: "52px",
     num: true,
-    render: (p) => fmt.pct(p.score_coverage),
+    render: (p) => fmt.pct(p.data_confidence_score),
   },
 ];
 
@@ -66,7 +87,10 @@ function Cells({ parcel }: { parcel: Parcel }) {
     <span
       key={c.key}
       className={`truncate ${c.num ? "text-right" : ""} ${
-        c.key === "score_coverage" && parcel.score_coverage < 0.7
+        (c.key === "data_confidence_score" && parcel.data_confidence_score < 0.5) ||
+        (c.key === "margin" && (parcel.margin ?? 0) <= 0) ||
+        (c.key === "rebuild_feasibility_score" &&
+          parcel.rebuild_feasibility_score === 0)
           ? "text-select"
           : ""
       }`}
@@ -142,7 +166,7 @@ export default function ParcelTable({
        document, which would otherwise push the detail panel off a phone. */
     <div className="flex min-h-0 flex-1 flex-col overflow-x-auto">
       <div
-        className="grid min-w-[760px] shrink-0 items-center gap-x-3 border-b border-line bg-panel px-3"
+        className="grid min-w-[1040px] shrink-0 items-center gap-x-3 border-b border-line bg-panel px-3"
         style={{ gridTemplateColumns: GRID, height: ROW }}
         role="row"
       >
@@ -163,7 +187,7 @@ export default function ParcelTable({
         type="button"
         disabled={!hoveredParcel}
         onClick={() => hoveredParcel && onReveal(hoveredParcel.row_key)}
-        className={`tnum grid min-w-[760px] shrink-0 items-center gap-x-3 border-b px-3 text-left ${
+        className={`tnum grid min-w-[1040px] shrink-0 items-center gap-x-3 border-b px-3 text-left ${
           hoveredParcel
             ? "border-select/40 bg-select/10 hover:bg-select/15"
             : "border-line bg-surface text-muted"
@@ -184,12 +208,12 @@ export default function ParcelTable({
         )}
       </button>
 
-      <div ref={box} onScroll={(e) => setTop(e.currentTarget.scrollTop)} className="min-h-0 min-w-[760px] flex-1 overflow-y-auto">
+      <div ref={box} onScroll={(e) => setTop(e.currentTarget.scrollTop)} className="min-h-0 min-w-[1040px] flex-1 overflow-y-auto">
         {rows.length === 0 ? (
           <p className="p-6 text-muted">
             {loading
               ? "Loading parcels…"
-              : "No parcels match. Widen a filter — score coverage and year built are the usual culprits."}
+              : "No parcels match. Widen a filter — \u201conly projects that pencil\u201d and minimum confidence are the usual culprits."}
           </p>
         ) : (
           <div style={{ height: rows.length * ROW, position: "relative" }}>

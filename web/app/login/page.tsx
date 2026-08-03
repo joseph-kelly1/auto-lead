@@ -37,7 +37,7 @@ export default function LoginPage() {
         <div>
           <p className="label mb-2">Private access</p>
           <h1 className="text-[22px] font-semibold tracking-tight">
-            Teardown screener
+            Auto Lead
           </h1>
           <p className="mt-2 leading-relaxed text-muted">
             Enter the shared access key to continue.

@@ -1,3 +1,15 @@
+#            Teardown-to-rebuild opportunity model — configuration
+#
+# Every number here is an EXPERT SETTING, not a fitted parameter. Nothing in
+# this file was learned from outcome data. `calibrate.py` reports whether the
+# available label volume is large enough to fit any of it out of sample, and
+# refuses to when it is not.
+#
+# The model answers "which parcels are the best complete teardown-and-rebuild
+# projects", which is a different question from "which houses look likely to be
+# demolished". Feasibility and economics decide; obsolescence and seller
+# likelihood only re-order what is already viable.
+
 [run]
 towns = ["NEWTON", "WAYLAND", "WELLESLEY", "WESTON"]
 raw_dir = "../data/raw"
@@ -25,8 +37,8 @@ poly_types = ["FEE", "TAX"]
 
 [neighborhood]
 # Nearest-k comparable parcels by centroid distance in EPSG:26986 (meters).
-# Used for area_vs_nbhd, and for percentile ranking when
-# run.percentile_scope = "neighborhood".
+# Used for area_vs_nbhd, for local comparable sales, and for percentile ranking
+# when run.percentile_scope = "neighborhood".
 k = 200
 
 [age]
@@ -40,36 +52,365 @@ peak_lo = 1945
 peak_hi = 1975
 falloff_years = 35
 
-[weights]
-# Tuned for building to sell, where subdivision potential is where the margin
-# is. lot_vs_zoning_min is doubled to 0.20; the weight came mostly out of
-# impr_psf, which correlates 0.91 with land_ratio and is the cheapest thing to
-# thin. INERT until zoning_minimums.csv exists - the component is null
-# everywhere until then and its weight is redistributed to the rest.
-land_ratio = 0.28
-impr_psf = 0.10
-area_vs_nbhd = 0.14
-far = 0.10
-years_since_sale = 0.08
-lot_vs_zoning_min = 0.20
-age = 0.05
-absentee = 0.05
+# --------------------------------------------------------------------------
+# [score] — how the five sub-scores combine into the final ranking
+# --------------------------------------------------------------------------
+# rebuild_opportunity_score =
+#     feasibility ^ feasibility_exponent
+#   * economics   ^ economics_exponent
+#   * confidence  ^ confidence_exponent
+#   * (1 + support_strength * support) / (1 + support_strength)
+#
+# where support is the weighted blend of acquisition likelihood and structure
+# obsolescence. The core is multiplicative on purpose: a feasibility gate of 0
+# forces the final score to 0, and no amount of seller motivation or structural
+# obsolescence can lift a parcel that cannot be rebuilt or cannot pencil.
+[score]
+feasibility_exponent = 1.0
+economics_exponent = 1.0
+# Below 1.0 so thin data discounts rather than annihilates a candidate; it
+# still cannot be ignored, because it multiplies.
+confidence_exponent = 0.5
+# The supporting term spans [1, 1 + support_strength]: at most a 35% re-order
+# among parcels that already clear feasibility and economics.
+support_strength = 0.35
+support_acquisition_likelihood = 0.6
+support_structure_obsolescence = 0.4
+
+# --------------------------------------------------------------------------
+# [feasibility] — can a replacement house actually be built?
+# --------------------------------------------------------------------------
+# Each key is a MULTIPLIER applied when the condition holds, so several
+# constraints compound. 0.0 is a hard blocker and forces the final score to 0.
+# An unknown never applies a multiplier — it lowers data_confidence_score
+# instead, which is the only honest treatment of missing information.
+[feasibility]
+# Parcel polygon intersects a MassDEP wetland. Not literally unbuildable, but
+# it means an NOI, a delineation and a Conservation Commission hearing before
+# anyone draws a foundation, and frequently a denied footprint.
+wetland_overlap = 0.10
+# Inside the 100 ft Wetlands Protection Act buffer zone: local ConCom
+# jurisdiction over the work, an order of conditions, but usually buildable.
+wetland_buffer = 0.55
+# Within the 200 ft riverfront area.
+wetland_riverfront = 0.85
+# Mapped FEMA Special Flood Hazard Area. New residential construction in an
+# SFHA means elevation certificates, flood insurance and, in a V zone, a
+# structural engineer.
+flood_sfha = 0.15
+acec = 0.30
+# MHC-inventoried building on the parcel. Demolition delay bylaws hang off
+# exactly this list in most MetroWest towns.
+historic_inventory = 0.30
+# Parcel falls inside an MHC historic area whose designation is National
+# Register only: advisory federally, but usually the map a local delay bylaw
+# points at.
+historic_district = 0.20
+# Local Historic District. Demolition requires a certificate from the historic
+# district commission, which is a real prohibition rather than a delay.
+historic_local_district = 0.05
+# A recorded preservation restriction runs with the land. Not a delay: a bar.
+historic_restriction = 0.0
+# Lot smaller than the zoning district minimum. In Massachusetts a pre-existing
+# nonconforming lot is often buildable by right under G.L. c.40A s.6, but
+# demolishing the structure can forfeit the grandfathered status, which is the
+# single most expensive surprise in this business.
+nonconforming_lot = 0.45
+# Far below the minimum: assume the grandfathered envelope is the only thing
+# that makes the lot usable, and that a teardown gives it up.
+severely_undersized_lot = 0.12
+severely_undersized_fraction = 0.60
+# Off municipal sewer and too small to site a compliant Title 5 system plus
+# reserve area alongside a larger house.
+septic_undersized = 0.25
+septic_min_acres = 0.75
+# Lot shape. 4*pi*A/P^2: 1.0 is a circle, a square is 0.785, a 4:1 rectangle is
+# 0.50. Below the floor the lot is a sliver, a flag lot or a pipestem and the
+# buildable envelope is not what its acreage suggests.
+odd_shaped_lot = 0.35
+min_compactness = 0.30
+# Axis-aligned bounding-box width, in feet. A proxy for frontage, which the
+# assessor extract does not carry. Not frontage: a corner lot or a diagonal
+# street makes the box wider than the street line.
+narrow_lot = 0.30
+min_lot_width_ft = 55.0
+# The existing structure already exceeds what current zoning would allow, so a
+# replacement is smaller than what stands today and the economics invert.
+downzoned_existing = 0.55
+# Several single-family records share one polygon: the mapped lot area cannot be
+# attributed to any of them, so no envelope calculation is trustworthy.
+shared_polygon = 0.50
+# A replacement house below this is not marketable in these towns, so if the
+# estimated envelope cannot reach it, treat the parcel as not rebuildable.
+unbuildable_envelope = 0.0
+
+# --------------------------------------------------------------------------
+# [buildable] — how much house can go back on the lot
+# --------------------------------------------------------------------------
+[buildable]
+# Preferred source is the zoning table (max_far / max_lot_coverage columns in
+# zoning_minimums.csv). Absent that, the envelope is inferred from the floor
+# area ratio of houses actually built nearby in the last decade — which is an
+# observation of what towns have in fact permitted, not a reading of the bylaw.
+# Marked "estimated" in the provenance columns either way it is inferred.
+observed_far_percentile = 0.75
+# Minimum comparable new builds needed before the neighbourhood's observed FAR
+# is used instead of the town's.
+min_observed_neighborhood = 8
+min_observed_town = 20
+# Hard rails on the inferred envelope.
+min_viable_sqft = 1800.0
+max_home_sqft = 7500.0
+# And no larger than this percentile of new-build living area in the town: the
+# market absorbs what it absorbs regardless of what the FAR permits.
+market_ceiling_percentile = 0.95
+# The existing house is deliberately NOT a floor on the envelope. If the local
+# observed FAR implies something smaller than what stands today, that is the
+# downzoned_existing case and the pro forma should feel it.
+
+# --------------------------------------------------------------------------
+# [comps] — after-rebuild value from real new-construction sales
+# --------------------------------------------------------------------------
+# The assessor extract carries LS_DATE and LS_PRICE, the last recorded sale.
+# A parcel whose YEAR_BUILT is recent and whose sale falls within a few years
+# of that year is a new-construction sale: exactly the comparable this model
+# needs. These are public records, not scraped, and no synthetic comparable is
+# ever invented — a town without enough of them gets a null ARV and says so.
+[comps]
+# A sale counts as new construction if it happened within this many years of
+# the year the structure was built.
+new_build_window_years = 3
+# Only structures built this year or later are treated as current product.
+min_year_built = 2012
+# And only sales this recent are used, trended forward to today. A long window
+# buys comparables at the cost of extrapolation: at a 6%/yr trend a ten-year-old
+# sale is a 1.8x adjustment and the adjustment is doing more work than the
+# comparable. Eight years is where Wayland still clears min_comps_town; drop it
+# to six and Wayland loses its resale value entirely, which the build reports.
+lookback_years = 8
+# Below this a recorded sale is a nominal-consideration deed, not a sale. There
+# are thousands of $1 and $100 family transfers in LS_PRICE and enough of them
+# will invert the sign of the fitted price trend.
+min_price = 400000
+# Paired-sales size adjustment. A new 2,000 sqft house in Newton does not sell
+# for 2,000 x $640/sqft, because most of the comparable's price is land that our
+# lot also has. The marginal square foot is worth this share of the average one.
+marginal_sqft_share = 0.60
+# After the size adjustment, the implied $/sqft is bounded against the
+# comparables' own. Smaller houses genuinely trade at a higher $/sqft because the
+# land underneath is fixed — but only so far. Without this bound a 2,800 sqft
+# envelope inherited enough of a 4,000 sqft comparable to imply $1,283/sqft in a
+# town whose new builds trade at $877, and those fictional margins went straight
+# to the top of the ranking.
+max_implied_ppsf_share = 1.25
+min_implied_ppsf_share = 0.75
+min_comps_town = 20
+# Local comparables are drawn from a nearest-neighbour search over the comp set
+# itself, not over all parcels: new builds are ~1.5% of these towns, so the
+# k = 200 parcel neighbourhood would hold two of them.
+min_comps_neighborhood = 8
+neighborhood_radius_m = 1500.0
+# Log-linear price trend, clamped: a slope fitted on a thin decade can run away,
+# and extrapolating 30%/yr forward would be fiction.
+#   "pooled" - one slope across every configured town. Regional appreciation is
+#              a regional phenomenon and pooling gets ~30k sales instead of 100.
+#              Weston's own slope fits at 9.3%/yr on 101 comps, which doubles an
+#              eight-year-old sale and produced $7.7M resale values.
+#   "town"   - per-town slope. Only with real per-town sale volume.
+trend_scope = "pooled"
+max_annual_trend = 0.12
+min_annual_trend = -0.05
+# And no single comparable may be adjusted for time by more than this factor. A
+# sale that needs a 2x adjustment to reach today is not a comparable, whatever
+# the trend line says.
+max_trend_adjustment = 1.35
+# Applied to every resale value. "Conservative" was in the brief, and one number
+# that shaves the whole ARV is easier to reason about than optimism hidden in
+# five places.
+conservatism = 0.95
+# The neighbourhood adjustment scales the town model by local $/sqft, bounded so
+# eight comps cannot double a value.
+max_neighborhood_adjustment = 1.35
+min_neighborhood_adjustment = 0.70
+
+# --------------------------------------------------------------------------
+# [acquisition] — what it costs to buy
+# --------------------------------------------------------------------------
+[acquisition]
+# Assessed value is not market value. The ratio of recent sale price to assessed
+# total is measured per town from the same extract rather than assumed; these
+# four towns land near 1.04. Falls back to the constant when a town has too few
+# recorded sales.
+ratio_lookback_years = 3
+ratio_min_sales = 25
+ratio_fallback = 1.05
+# What it takes to buy something that is not for sale.
+off_market_premium = 1.05
+# Where the assessor suppresses the structure value, TOTAL_VAL is depressed with
+# it and an assessment multiple reads as a bargain: 1,637 Newton parcels have
+# BLDG_VAL = 0 alongside living area and a year built, and one of them priced
+# out at a $356k acquisition in Newton. Those fall back to LAND_VAL grossed up by
+# the town's measured sale-price-to-land-value ratio instead.
+land_multiple_min_sales = 25
+land_multiple_fallback = 1.9
+# A live list price, where an authorized MLS/listings export supplies one, is
+# used instead of the estimate and marked authoritative.
+listed_price_premium = 1.0
+
+# --------------------------------------------------------------------------
+# [costs] — project cost assumptions. Order-of-magnitude MetroWest figures.
+# --------------------------------------------------------------------------
+# These are the numbers to argue about with your builder. They are assumptions,
+# not data, and the pro forma labels them as such. Every one is per-project or
+# per-square-foot so it scales with the envelope rather than being a flat guess.
+[costs]
+demolition_per_sqft = 12.0
+demolition_minimum = 25000.0
+# Abatement of a pre-1978 structure: asbestos, lead paint, sometimes a buried
+# oil tank. Applied when the existing house predates the cutoff.
+abatement = 18000.0
+abatement_year_cutoff = 1978
+# The one assumption here that is checked against outcomes rather than asserted.
+# `calibrate.py` solves the pro forma for the rate that would have made each
+# actually-completed-and-sold rebuild break even; over the 311 such projects in
+# the deepest window that distribution is p25 $252 / median $351 / p75 $439.
+# 350 is that median. It is still an assumption — the acquisition side of those
+# projects is modelled, not observed, so the true supportable rate is probably a
+# little higher — and it is the first number to replace with your builder's.
+# Re-run `uv run calibrate.py` after changing it; the check is reprinted.
+construction_per_sqft = 350.0
+site_work = 60000.0
+# New Title 5 system where the parcel is not in a sewer service area. Where
+# sewer status is unknown the septic cost is assumed, which is the conservative
+# direction, and the parcel is marked estimated.
+septic_system = 45000.0
+utility_connections = 15000.0
+design_permitting_pct = 0.07      # of hard cost
+contingency_pct = 0.08            # of hard cost
+carry_months = 14
+annual_finance_rate = 0.10
+finance_ltc = 0.70                # share of basis actually financed
+property_tax_rate = 0.0105        # annual, of acquisition price, during carry
+insurance_annual = 4000.0
+brokerage_pct = 0.045             # of resale value
+seller_closing_pct = 0.010        # of resale value
+# Massachusetts deeds excise, $4.56 per $1,000, paid by the seller: us, on exit.
+transfer_stamps_pct = 0.00456
+buyer_closing_pct = 0.015         # of acquisition price
+
+# --------------------------------------------------------------------------
+# [economics] — dollars to a 0..1 score
+# --------------------------------------------------------------------------
+[economics]
+# Profit margin on resale value. target_margin scores 1.0, min_margin scores
+# 0.0, and anything below min_margin is 0 — an unprofitable project is not a
+# weak opportunity, it is not an opportunity.
+target_margin = 0.20
+min_margin = 0.02
+# An unprofitable project is not a weak opportunity, but forcing 90% of the
+# universe to exactly 0.0 makes the map and table useless below the cut line. A
+# margin under min_margin therefore lands on a decaying tail instead: it starts
+# at unprofitable_ceiling, which is an order of magnitude below anything that
+# pencils, and halves every tail_margin_span of margin below the line. Ordering
+# survives; nothing unprofitable can rank.
+unprofitable_ceiling = 0.05
+tail_margin_span = 0.15
+# Adverse case for the sensitivity columns and for the blended score.
+sensitivity_acquisition = 0.10    # pay 10% more
+sensitivity_cost = 0.12           # build 12% over
+sensitivity_value = 0.08          # sell 8% under
+# How much the blended score leans on the adverse case rather than the base.
+downside_weight = 0.40
+# Lots at least this many times the zoning minimum can plausibly be split.
+# Scored as bounded upside, NOT as a second pro forma: a real subdivision needs
+# frontage, a road, and a planning board.
+subdivision_min_multiple = 2.0
+subdivision_bonus = 0.10
+
+# --------------------------------------------------------------------------
+# [obsolescence] — is keeping the existing house economically weak?
+# --------------------------------------------------------------------------
+# These were the whole model before. They are now one supporting sub-score,
+# because "the structure is worthless" is evidence about the existing house, not
+# evidence that a rebuild is buildable or profitable. Weights are within this
+# sub-score and sum to 1.
+[obsolescence]
+land_ratio = 0.34
+impr_psf = 0.12
+area_vs_nbhd = 0.24
+far = 0.16
+age = 0.14
+
+# --------------------------------------------------------------------------
+# [acquisition_likelihood] — will it trade, and when?
+# --------------------------------------------------------------------------
+# Kept separate so an excellent redevelopment parcel that will not sell stays
+# visible while remaining distinguishable from an actionable lead. Components
+# with no data source available are dropped and their weight redistributed
+# WITHIN this sub-score only, and the drop is recorded.
+[acquisition_likelihood]
+years_since_sale = 0.34
+absentee = 0.16
+# OWNER1 naming an estate or a deceased owner's estate. Public record.
+estate = 0.14
+# A care-of mailing address: the owner is not handling their own mail.
+care_of = 0.06
+# The remaining four need listings.csv (an authorized MLS or feed export).
+# Without it they are null everywhere and their weight redistributes.
+listed = 0.14
+days_on_market = 0.08
+price_cut = 0.06
+withdrawn_or_expired = 0.02
+# A listing older than this many days is stale, which is where the negotiating
+# room is; the component saturates there.
+stale_days = 120
+
+# --------------------------------------------------------------------------
+# [confidence] — how much of the answer is actually known
+# --------------------------------------------------------------------------
+# Per-parcel weighted provenance over the inputs that materially move the
+# score. Authoritative earns full credit, an estimate earns estimated_credit,
+# missing earns nothing. Weights sum to 1.
+[confidence]
+zoning = 0.22            # authoritative district + dimensional minimums
+resale_value = 0.20      # enough local new-build comparable sales
+lot_area = 0.12
+structure_value = 0.10
+living_area = 0.08
+acquisition_price = 0.12 # a real list price rather than an assessment multiple
+constraints = 0.10       # wetland / flood / sewer / historic actually screened
+buildable_envelope = 0.06
+estimated_credit = 0.55
+# Confidence multiplies, so a hard floor keeps a completely unknown parcel
+# rankable at the bottom instead of indistinguishable from a blocked one.
+floor = 0.15
 
 [completeness]
 # If a town populates a field for fewer than this fraction of its scored
 # parcels, that component is dropped for the whole town rather than ranking
-# its parcels against each other on noise. The component's weight is
-# redistributed; score_coverage records how much weight survived.
+# its parcels against each other on noise. Applies to the obsolescence and
+# acquisition-likelihood components, whose weights redistribute within their
+# own sub-score. It does NOT apply to feasibility or economics inputs, which
+# reduce confidence instead.
 min_town_coverage = 0.5
 
 [flags]
-# Spatial pre-flags against MassGIS constraint layers, joined in EPSG:26986.
-# These mark a parcel as needing review; none of them asserts a conclusion.
-# Set false to skip the ~360 MB of statewide layer downloads.
+# Spatial screens against MassGIS layers, joined in EPSG:26986. Wetland, flood,
+# sewer, ACEC and historic now feed rebuild_feasibility_score; footprints feed
+# the envelope and lot-coverage estimates. Set false to skip ~400 MB of
+# statewide layer downloads — the build still works, and every parcel simply
+# reports lower confidence.
 enabled = true
 # How far to look for a wetland before giving up. Beyond this the distance is
 # null, which means "not near one we know of", not "no wetland".
 wetland_search_m = 250.0
+# MassGIS building footprints. Statewide coverage is partial; parcels outside
+# it get null footprint columns and lower confidence, never a zero.
+footprints = true
+# MHC historic inventory. An absence is NOT evidence a house is unlisted —
+# Newton has 155 inventoried points for 17k single families — so the layer can
+# only ever add a constraint, never clear one.
+historic = true
 
 [tiles]
 min_zoom = 10

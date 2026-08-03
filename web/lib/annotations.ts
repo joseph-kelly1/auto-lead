@@ -82,7 +82,7 @@ export function exportFile(store: Store) {
   });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `teardown-notes-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `auto-lead-notes-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
 }

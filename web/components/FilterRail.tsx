@@ -44,7 +44,7 @@ export default function FilterRail({
   return (
     <aside className="hidden h-full w-[248px] shrink-0 flex-col gap-7 overflow-y-auto border-r border-line bg-panel px-4 py-5 md:flex">
       <div>
-        <h1 className="text-[15px] font-semibold tracking-tight">Teardown screener</h1>
+        <h1 className="text-[15px] font-semibold tracking-tight">Auto Lead</h1>
         <p className="tnum mt-1 text-muted">
           {loading
             ? "Counting…"
@@ -89,19 +89,76 @@ export default function FilterRail({
         />
       </Field>
 
-      <Field label="Minimum data coverage" hint={fmt.pct(filters.minCoverage)}>
+      <Field label="Buildable and profitable">
+        <label className="flex cursor-pointer items-start gap-2 leading-snug">
+          <input
+            type="checkbox"
+            checked={filters.excludeBlocked}
+            onChange={(e) => set("excludeBlocked", e.target.checked)}
+            className="mt-0.5 accent-s3"
+          />
+          Hide hard feasibility blockers
+        </label>
+        <label className="flex cursor-pointer items-start gap-2 leading-snug">
+          <input
+            type="checkbox"
+            checked={filters.requireProfitable}
+            onChange={(e) => set("requireProfitable", e.target.checked)}
+            className="mt-0.5 accent-s3"
+          />
+          Only projects that pencil
+        </label>
+        <p className="text-[11px] leading-snug text-muted">
+          Both on by default: this tool is for finding projects, not for finding
+          houses that look demolishable. Turn them off to see the whole universe.
+        </p>
+      </Field>
+
+      <Field label="Minimum margin" hint={fmt.pct(filters.minMargin)}>
+        <input
+          type="range"
+          min={0}
+          max={0.4}
+          step={0.01}
+          value={filters.minMargin}
+          onChange={(e) => set("minMargin", +e.target.value)}
+          className="w-full"
+        />
+        <p className="text-[11px] leading-snug text-muted">
+          Estimated gross profit as a share of the completed value, at the cost
+          assumptions in <code>config.toml</code>.
+        </p>
+      </Field>
+
+      <Field
+        label="Minimum feasibility"
+        hint={filters.minFeasibility.toFixed(2)}
+      >
         <input
           type="range"
           min={0}
           max={1}
           step={0.05}
-          value={filters.minCoverage}
-          onChange={(e) => set("minCoverage", +e.target.value)}
+          value={filters.minFeasibility}
+          onChange={(e) => set("minFeasibility", +e.target.value)}
+          className="w-full"
+        />
+      </Field>
+
+      <Field label="Minimum data confidence" hint={fmt.pct(filters.minConfidence)}>
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.05}
+          value={filters.minConfidence}
+          onChange={(e) => set("minConfidence", +e.target.value)}
           className="w-full"
         />
         <p className="text-[11px] leading-snug text-muted">
-          Share of the scoring weight this parcel actually had data for. Below
-          70% the score rests on a few signals.
+          How much of this parcel's score rests on authoritative inputs rather
+          than estimates. Zoning is missing everywhere until a zoning table is
+          loaded, which caps everyone.
         </p>
       </Field>
 
@@ -193,6 +250,28 @@ export default function FilterRail({
           />
           Exclude FEMA flood zones
         </label>
+        <label className="flex cursor-pointer items-start gap-2 leading-snug">
+          <input
+            type="checkbox"
+            checked={filters.excludeWetland}
+            onChange={(e) => set("excludeWetland", e.target.checked)}
+            className="mt-0.5 accent-s3"
+          />
+          Exclude wetland overlap and buffer
+        </label>
+        <label className="flex cursor-pointer items-start gap-2 leading-snug">
+          <input
+            type="checkbox"
+            checked={filters.excludeHistoric}
+            onChange={(e) => set("excludeHistoric", e.target.checked)}
+            className="mt-0.5 accent-s3"
+          />
+          Exclude anything MHC has a record of
+        </label>
+        <p className="text-[11px] leading-snug text-muted">
+          These narrow the list. None of them can clear a parcel: MHC coverage is
+          patchy and only a delineation settles a wetland.
+        </p>
       </Field>
 
       <Field label="Status">

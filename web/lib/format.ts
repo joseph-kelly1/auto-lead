@@ -23,7 +23,16 @@ export const fmt = {
   ratio: (v: number | null) => (v == null ? "—" : v.toFixed(2)),
   ratio3: (v: number | null) => (v == null ? "—" : v.toFixed(3)),
   acres: (v: number | null) => (v == null ? "—" : `${v.toFixed(2)} ac`),
-  date: (v: string | null) => v ?? "—",
+  /**
+   * DuckDB-WASM hands a parquet DATE back as epoch milliseconds, not a string,
+   * so a bare String() renders "838857600000" where a date belongs.
+   */
+  date: (v: string | number | Date | null) => {
+    if (v == null || v === "") return "—";
+    if (typeof v === "string") return v.slice(0, 10);
+    const d = v instanceof Date ? v : new Date(v);
+    return Number.isNaN(d.getTime()) ? "—" : d.toISOString().slice(0, 10);
+  },
 };
 
 export function fmtBy(kind: string, v: number | null) {
