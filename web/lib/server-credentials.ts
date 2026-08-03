@@ -24,6 +24,14 @@ function requireSharedCredentialStorage() {
     );
 }
 
+function blobAuth() {
+  // A Vercel env pull can include both a read/write token and an OIDC token
+  // without BLOB_STORE_ID. Passing the store token explicitly avoids that
+  // ambiguous SDK state; linked deployments can still fall back to OIDC.
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  return token ? { token } : {};
+}
+
 function base64Url(bytes: Uint8Array) {
   return Buffer.from(bytes).toString("base64url");
 }
@@ -81,6 +89,7 @@ export async function readSharedCredentials() {
     // Credentials are tiny and infrequently read. Bypass the CDN so a save or
     // removal is visible immediately in every browser.
     useCache: false,
+    ...blobAuth(),
   });
   if (!result || result.statusCode !== 200) return {} as MarketCredentials;
   return unsealCredentials(await new Response(result.stream).text());
@@ -94,10 +103,11 @@ export async function writeSharedCredentials(credentials: MarketCredentials) {
     allowOverwrite: true,
     cacheControlMaxAge: 60,
     contentType: "application/octet-stream",
+    ...blobAuth(),
   });
 }
 
 export async function deleteSharedCredentials() {
   requireSharedCredentialStorage();
-  await del(CREDENTIALS_PATHNAME);
+  await del(CREDENTIALS_PATHNAME, blobAuth());
 }
