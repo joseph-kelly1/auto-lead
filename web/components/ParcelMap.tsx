@@ -40,7 +40,7 @@ export default function ParcelMap({
   const loaded = useRef(false);
 
   // The map is built once, so its handlers would otherwise close over the
-  // first render's props — including the empty loc_id lookup, which silently
+  // first render's props - including the empty loc_id lookup, which silently
   // broke map-to-table hover.
   const cb = useRef({ onHover, onSelect });
   cb.current = { onHover, onSelect };

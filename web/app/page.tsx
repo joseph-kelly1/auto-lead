@@ -28,6 +28,7 @@ export default function Page() {
   const [desc, setDesc] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [synthetic, setSynthetic] = useState(false);
 
   const [hovered, setHovered] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -42,6 +43,11 @@ export default function Page() {
   const annotated = useMemo(() => indexAnnotations(store), [store]);
 
   useEffect(() => {
+    queryOne<{ synthetic: boolean }>(
+      "SELECT coalesce(bool_and(release = 'synthetic-demo'), false) AS synthetic FROM parcels",
+    )
+      .then((r) => setSynthetic(r?.synthetic ?? false))
+      .catch(() => {});
     query<{ town: string }>("SELECT DISTINCT town FROM parcels ORDER BY town")
       .then((r) => setTowns(r.map((x) => x.town)))
       .then(() => queryOne<{ n: number }>("SELECT count(*) AS n FROM parcels"))
@@ -49,8 +55,7 @@ export default function Page() {
       .catch((e: unknown) =>
         setError(
           `Could not read parcels.parquet from ${ARTIFACT_BASE}. ` +
-            `Start the local artifact server with \`npm run artifacts\`, or set ` +
-            `NEXT_PUBLIC_ARTIFACT_BASE to your bucket. (${
+            `Restore the bundled demo, or set NEXT_PUBLIC_ARTIFACT_BASE to your artifacts. (${
               e instanceof Error ? e.message : String(e)
             })`,
         ),
@@ -78,7 +83,7 @@ export default function Page() {
     }
   }, [filters, sort, desc, annotated]);
 
-  // Filters are local queries, so there is no round trip to debounce away —
+  // Filters are local queries, so there is no round trip to debounce away -
   // a frame of coalescing is enough to keep slider drags smooth.
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
@@ -140,6 +145,11 @@ export default function Page() {
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
+        {synthetic && (
+          <p className="border-b border-line bg-panel px-4 py-2 text-muted">
+            Synthetic demo. Parcels and financial values are fictional.
+          </p>
+        )}
         {error && (
           <div className="border-b border-select/40 bg-select/10 px-4 py-2 text-select">
             {error}

@@ -117,7 +117,7 @@ def label_table(con, prior_parquet: Path, current_parquet: Path, sources, cfg):
     """One row per parcel present in both vintages, with every label column.
 
     Success means a finished replacement house, so every success label requires
-    evidence that a new structure exists — not merely that the old one left.
+    evidence that a new structure exists - not merely that the old one left.
     """
     permits = None
     for cand in ("permits.csv", "demolition_permits.csv"):
@@ -178,7 +178,7 @@ def label_table(con, prior_parquet: Path, current_parquet: Path, sources, cfg):
             AND j.bv_now / j.bv_prior >= 3.0 * i.med_bldg_growth) AS lbl_value_jump,
            -- The FINISHED house sold, not the lot. LS_PRICE holds only the last
            -- recorded sale, and for a spec build that is usually the completed
-           -- home — but not always: one example property's last sale is the builder's
+           -- home - but not always: one example property's last sale is the builder's
            -- $880k land purchase in the same year the new house was finished.
            -- Two tests separate them. The sale must be dated at or after the
            -- build year, and it must be priced like a finished house: at these
@@ -322,7 +322,7 @@ def compare(con, columns: dict[str, str], y: np.ndarray, arrays: dict):
     for label, col in columns.items():
         r = rank_metrics(arrays[col], y)
         p = dict((k, (pr, rec)) for k, pr, rec in r["p_at_k"])
-        cell = lambda k, i: (f"{p[k][i]:.1%}" if k in p else "—")
+        cell = lambda k, i: (f"{p[k][i]:.1%}" if k in p else "-")
         print(f"  {label:<32}{r['auc']:>7.3f}{cell(50, 0):>8}"
               f"{cell(100, 0):>8}{cell(250, 0):>8}{cell(250, 1):>12}")
         out[label] = r
@@ -347,7 +347,7 @@ def per_town(arrays, y, towns, target):
         score = arrays["rebuild_opportunity_score"][m]
         r = rank_metrics(score, y[m])
         p = precision_at(score, y[m], (25, 50, 100))
-        cell = lambda k: (f"{p[k]:.1%}" if k in p else "—")
+        cell = lambda k: (f"{p[k]:.1%}" if k in p else "-")
         print(f"  {t:<12}{r['n']:>8,}{r['labels']:>11,}{r['base_rate']:>8.2%}"
               f"{r['auc']:>7.3f}{cell(25):>8}{cell(50):>8}{cell(100):>8}")
 
@@ -413,7 +413,7 @@ def cost_check(con, cfg, target):
 
 # Only the combination weights are searchable this way: the five sub-scores are
 # already in the parquet, so recombining them is arithmetic rather than a
-# rebuild. Feasibility multipliers and cost assumptions are NOT searched — they
+# rebuild. Feasibility multipliers and cost assumptions are NOT searched - they
 # are dollar and regulatory statements, and there are no labels that identify
 # which gate blocked which deal.
 GRID = {

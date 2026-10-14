@@ -49,7 +49,7 @@ export default function FilterRail({
           {loading
             ? "Counting…"
             : count == null
-              ? "—"
+              ? "-"
               : `${fmt.num(count)} of ${fmt.num(total)} parcels`}
         </p>
       </div>

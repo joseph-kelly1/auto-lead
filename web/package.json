@@ -3,10 +3,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npm run stage && next build",
+    "build": "node scripts/stage-artifacts.mjs --check && next build",
     "start": "next start",
-    "artifacts": "node ../scripts/serve-artifacts.mjs",
-    "stage": "node scripts/stage-artifacts.mjs"
+    "stage": "node scripts/stage-artifacts.mjs",
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.29.0",

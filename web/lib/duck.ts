@@ -13,7 +13,7 @@ import type * as DuckDB from "@duckdb/duckdb-wasm";
  * Bundles come from jsDelivr and the worker is created from a blob URL, which
  * sidesteps bundler-specific worker and wasm asset handling entirely. The
  * mvp/eh bundle is selected rather than the coi one, so no SharedArrayBuffer
- * and therefore no COOP/COEP headers — which would break these CDN fetches.
+ * and therefore no COOP/COEP headers - which would break these CDN fetches.
  */
 
 // Empty means same origin: the artifacts are staged into public/ at build

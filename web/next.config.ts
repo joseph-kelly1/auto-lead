@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Parcel data never passes through a function; artifacts are fetched
   // straight from object storage by the browser over range requests.
-  outputFileTracingExcludes: { "*": ["../artifacts/**", "../data/**"] },
+  outputFileTracingExcludes: { "*": ["../pipeline/artifacts/**", "../pipeline/data/**"] },
 };
 
 export default nextConfig;

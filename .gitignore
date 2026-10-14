@@ -1,10 +1,21 @@
-data/
-artifacts/
-pipeline/.venv/
-pipeline/uv.lock
+# Local source records and model outputs
+/pipeline/data/
+/pipeline/artifacts/
+/pipeline/zoning_assignments.csv
+/pipeline/listings.csv
+/pipeline/permits.csv
+/pipeline/demolition_permits.csv
+
+# Dependencies and generated caches
 node_modules/
+.venv/
 .next/
-.env*.local
-.DS_Store
 __pycache__/
+*.py[cod]
 *.tsbuildinfo
+.DS_Store
+
+# Credentials and deployment metadata
+.env*
+!.env.example
+.vercel/

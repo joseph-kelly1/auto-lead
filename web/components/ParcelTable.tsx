@@ -37,7 +37,7 @@ const COLS: {
     key: "site_addr",
     head: "Address",
     w: "minmax(160px,1fr)",
-    render: (p) => p.site_addr ?? "—",
+    render: (p) => p.site_addr ?? "-",
   },
   {
     key: "margin",
@@ -70,7 +70,7 @@ const COLS: {
   },
   { key: "year_built", head: "Built", w: "56px", num: true, render: (p) => fmt.year(p.year_built) },
   { key: "res_area", head: "Living", w: "68px", num: true, render: (p) => fmt.num(p.res_area) },
-  { key: "lot_acres", head: "Lot", w: "62px", num: true, render: (p) => p.lot_acres?.toFixed(2) ?? "—" },
+  { key: "lot_acres", head: "Lot", w: "62px", num: true, render: (p) => p.lot_acres?.toFixed(2) ?? "-" },
   {
     key: "data_confidence_score",
     head: "Conf",
@@ -213,7 +213,7 @@ export default function ParcelTable({
           <p className="p-6 text-muted">
             {loading
               ? "Loading parcels…"
-              : "No parcels match. Widen a filter — \u201conly projects that pencil\u201d and minimum confidence are the usual culprits."}
+              : "No parcels match. Widen a filter - \u201conly projects that pencil\u201d and minimum confidence are the usual culprits."}
           </p>
         ) : (
           <div style={{ height: rows.length * ROW, position: "relative" }}>

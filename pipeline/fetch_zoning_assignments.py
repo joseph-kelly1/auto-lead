@@ -24,7 +24,7 @@ from pathlib import Path
 import duckdb
 
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent
 PARCELS = ROOT / "artifacts" / "parcels.parquet"
 OUTPUT = Path(__file__).resolve().parent / "zoning_assignments.csv"
 

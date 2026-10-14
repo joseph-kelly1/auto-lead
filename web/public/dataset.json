@@ -1,0 +1,8 @@
+{
+  "kind": "synthetic",
+  "rows": 120,
+  "sha256": {
+    "parcels.parquet": "d0832021175e44390fccfa2bd9aa3d73f4d2dbc97658d66c4a04465539af927e",
+    "parcels.pmtiles": "120e761acea4afd6efadd7feab97a6ab1bb4f2cf321cdce441d75ceab87464ac"
+  }
+}

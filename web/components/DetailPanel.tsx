@@ -94,7 +94,7 @@ export default function DetailPanel({
     const address =
       typeof row?.site_addr === "string" ? row.site_addr.trim() : "";
     const town = typeof row?.town === "string" ? row.town.trim() : "";
-    if (!address || !town) {
+    if (!address || !town || row?.release === "synthetic-demo") {
       setMarket(null);
       setMarketError(null);
       return;
@@ -133,7 +133,7 @@ export default function DetailPanel({
   const address = s("site_addr");
   const town = s("town");
   const zillowSearchUrl =
-    address && town
+    address && town && row?.release !== "synthetic-demo"
       ? `https://www.zillow.com/homes/${encodeURIComponent(`${address}, ${town}, MA`)}_rb/`
       : null;
   const zillowUrl = market?.zillow?.url ?? zillowSearchUrl;
@@ -187,7 +187,7 @@ export default function DetailPanel({
         {confidence < 0.5 && (
           <p className="mt-2 text-[11px] leading-snug text-select">
             Thin data. Most of this score rests on estimates rather than
-            authoritative inputs — see the provenance list below.
+            authoritative inputs - see the provenance list below.
           </p>
         )}
         {zillowUrl && (
@@ -211,7 +211,7 @@ export default function DetailPanel({
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-[12px]">{c.label}</span>
                 <span className="tnum text-[11px] text-muted">
-                  {n(c.key) == null ? "—" : (n(c.key) as number).toFixed(2)}
+                  {n(c.key) == null ? "-" : (n(c.key) as number).toFixed(2)}
                 </span>
               </div>
               <Bar pct={n(c.key)} />
@@ -282,7 +282,7 @@ export default function DetailPanel({
             {n("subdivision_lots") != null && (n("subdivision_lots") as number) >= 2 && (
               <p className="mt-2 text-[11px] leading-snug text-select">
                 Lot is {fmt.ratio(n("subdivision_lots"))}× the zoning minimum, so
-                a split may be possible. Scored as bounded upside only — this is
+                a split may be possible. Scored as bounded upside only - this is
                 not a two-lot pro forma, and a real subdivision needs frontage, a
                 road and a planning board.
               </p>
@@ -290,7 +290,7 @@ export default function DetailPanel({
             <p className="mt-2 text-[11px] leading-snug text-muted">
               Costs come from <code>config.toml</code> and are assumptions, not
               data. The completed value is modelled from recorded new-build sales
-              and carries real error — treat it as a screen, not an appraisal.
+              and carries real error - treat it as a screen, not an appraisal.
             </p>
           </>
         )}
@@ -321,7 +321,7 @@ export default function DetailPanel({
         <div className="space-y-1">
           {PROVENANCE.map((p) => {
             const v = n(`prov_${p.key}`);
-            const label = v == null ? "—" : PROVENANCE_LABEL[v];
+            const label = v == null ? "-" : PROVENANCE_LABEL[v];
             return (
               <div key={p.key} className="flex items-baseline justify-between gap-3">
                 <span className="text-[12px]">{p.label}</span>
@@ -373,7 +373,7 @@ export default function DetailPanel({
               : `${fmt.date(row.ls_date as string | number)} · ${fmt.usd(n("ls_price"))}`
           }
         />
-        <Stat k="Owner" v={<span className="font-normal">{s("owner1") ?? "—"}</span>} />
+        <Stat k="Owner" v={<span className="font-normal">{s("owner1") ?? "-"}</span>} />
         <Stat
           k="Motivation signals"
           v={
@@ -510,7 +510,7 @@ export default function DetailPanel({
         <p className="mt-2 text-[11px] leading-snug text-muted">
           Screening only, from MassGIS layers. A delineation, a Title 5
           inspection and the town's own maps are the answers that count. An
-          absent MHC record is not evidence a house is unlisted — Newton has 155
+          absent MHC record is not evidence a house is unlisted - Newton has 155
           inventoried points against 17,000 single families.
           {row.flag_sewer === false &&
             " Septic means a Title 5 inspection at transfer and $30–60k+ for a new system."}

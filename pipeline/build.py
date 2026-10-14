@@ -66,7 +66,7 @@ LAYER_SOURCES = {
     # buildings; polygons are historic areas and districts.
     "historic_pt": ("mhcinv", "MHCINV_PT.shp"),
     "historic_poly": ("mhcinv", "MHCINV_POLY.shp"),
-    # Building footprints. Statewide coverage is PARTIAL — absence is not
+    # Building footprints. Statewide coverage is PARTIAL - absence is not
     # evidence of a vacant lot, so the columns go null and confidence drops.
     "footprint": ("buildingfp_poly", "BUILDINGFP_POLY.shp"),
 }
@@ -690,7 +690,7 @@ def comparable_sales(d, cfg, towns, xy, quiet=False):
     Comparables are new-construction sales taken from the assessor's own
     LS_DATE / LS_PRICE: a parcel whose structure was built recently and which
     sold within a few years of that build is a new-home sale. Public record, no
-    scraping, and no synthetic comparable anywhere — a town without enough of
+    scraping, and no synthetic comparable anywhere - a town without enough of
     them gets a NULL resale value and a report line saying so.
     """
     c = cfg["comps"]
@@ -1196,7 +1196,7 @@ def score_report(con, parquet: Path, cfg):
     log(f"    {'town':<11}{'n':>7}{'blocked':>9}{'no ARV':>8}{'ARV':>12}"
         f"{'acq':>11}{'cost':>12}{'margin':>9}{'>=20%':>7}{'conf':>7}")
     for t, n, blk, na, av, ac, co, mg, st, cf in cur.fetchall():
-        f = lambda v, w, k="": ("—".rjust(w) if v is None else
+        f = lambda v, w, k="": ("-".rjust(w) if v is None else
                                 (f"{v:,.0f}".rjust(w) if k == "n"
                                  else f"{v:.1%}".rjust(w)))
         log(f"    {t:<11}{n:>7,}{blk:>9,}{na:>8,}{f(av, 12, 'n')}"

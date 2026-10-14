@@ -13,25 +13,25 @@ const usd0 = new Intl.NumberFormat("en-US", {
 });
 
 export const fmt = {
-  usd: (v: number | null) => (v == null ? "—" : usd0.format(v)),
+  usd: (v: number | null) => (v == null ? "-" : usd0.format(v)),
   usdK: (v: number | null) =>
-    v == null ? "—" : v >= 1e6 ? `$${(v / 1e6).toFixed(2)}M` : `$${Math.round(v / 1e3)}k`,
+    v == null ? "-" : v >= 1e6 ? `$${(v / 1e6).toFixed(2)}M` : `$${Math.round(v / 1e3)}k`,
   num: (v: number | null, d = 0) =>
-    v == null ? "—" : v.toLocaleString("en-US", { maximumFractionDigits: d }),
-  year: (v: number | null) => (v == null ? "—" : String(Math.trunc(v))),
-  pct: (v: number | null, d = 0) => (v == null ? "—" : `${(v * 100).toFixed(d)}%`),
-  ratio: (v: number | null) => (v == null ? "—" : v.toFixed(2)),
-  ratio3: (v: number | null) => (v == null ? "—" : v.toFixed(3)),
-  acres: (v: number | null) => (v == null ? "—" : `${v.toFixed(2)} ac`),
+    v == null ? "-" : v.toLocaleString("en-US", { maximumFractionDigits: d }),
+  year: (v: number | null) => (v == null ? "-" : String(Math.trunc(v))),
+  pct: (v: number | null, d = 0) => (v == null ? "-" : `${(v * 100).toFixed(d)}%`),
+  ratio: (v: number | null) => (v == null ? "-" : v.toFixed(2)),
+  ratio3: (v: number | null) => (v == null ? "-" : v.toFixed(3)),
+  acres: (v: number | null) => (v == null ? "-" : `${v.toFixed(2)} ac`),
   /**
    * DuckDB-WASM hands a parquet DATE back as epoch milliseconds, not a string,
    * so a bare String() renders "838857600000" where a date belongs.
    */
   date: (v: string | number | Date | null) => {
-    if (v == null || v === "") return "—";
+    if (v == null || v === "") return "-";
     if (typeof v === "string") return v.slice(0, 10);
     const d = v instanceof Date ? v : new Date(v);
-    return Number.isNaN(d.getTime()) ? "—" : d.toISOString().slice(0, 10);
+    return Number.isNaN(d.getTime()) ? "-" : d.toISOString().slice(0, 10);
   },
 };
 
